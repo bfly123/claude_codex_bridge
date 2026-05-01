@@ -6,6 +6,7 @@ __pycache__/
 docs/
 !docs/
 !docs/**/*.md
+docs/ppt_materials/
 tests/
 test/dir1/.ccb/
 .ccb_config/
