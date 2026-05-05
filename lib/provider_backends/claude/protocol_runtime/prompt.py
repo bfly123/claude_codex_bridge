@@ -4,8 +4,6 @@ import os
 
 from provider_core.protocol import BEGIN_PREFIX, DONE_PREFIX, REQ_ID_PREFIX
 
-from .skills import load_claude_skills
-
 
 def wrap_claude_prompt(message: str, req_id: str) -> str:
     body = _build_prompt_body(message)
@@ -26,9 +24,6 @@ def wrap_claude_turn_prompt(message: str, req_id: str) -> str:
 
 def _build_prompt_body(message: str) -> str:
     rendered = (message or '').rstrip()
-    skills = load_claude_skills()
-    if skills:
-        rendered = f'{skills}\n\n{rendered}'.strip()
     extras = _prompt_extras(rendered)
     if extras:
         return f'{rendered}\n\n{extras}\n\n'

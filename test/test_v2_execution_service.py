@@ -280,6 +280,10 @@ def test_execution_service_claude_adapter_emits_session_boundary_items_from_log(
 
     assert sent and sent[0][0] == '%2'
     assert fixed_req_id in sent[0][1]
+    assert 'real claude' in sent[0][1]
+    assert 'Async Ask' not in sent[0][1]
+    assert 'command ask' not in sent[0][1]
+    assert 'SKILL.md' not in sent[0][1]
     assert [item.kind for item in update.items] == [
         CompletionItemKind.ANCHOR_SEEN,
         CompletionItemKind.ASSISTANT_CHUNK,

@@ -20,7 +20,6 @@ def test_extract_reply_for_req_uses_begin_and_done_window() -> None:
 
 def test_wrap_claude_prompt_includes_language_and_markdown_hint(monkeypatch) -> None:
     monkeypatch.setenv('CCB_REPLY_LANG', 'zh')
-    monkeypatch.setattr('provider_backends.claude.protocol_runtime.prompt.load_claude_skills', lambda: '')
 
     prompt = wrap_claude_prompt('Please return a markdown table', 'req_1')
 
@@ -30,11 +29,12 @@ def test_wrap_claude_prompt_includes_language_and_markdown_hint(monkeypatch) -> 
     assert 'CCB_DONE: req_1' in prompt
 
 
-def test_wrap_claude_turn_prompt_prefixes_loaded_skills(monkeypatch) -> None:
+def test_wrap_claude_turn_prompt_does_not_prefix_local_ask_skill_text(monkeypatch) -> None:
     monkeypatch.delenv('CCB_REPLY_LANG', raising=False)
     monkeypatch.delenv('CCB_LANG', raising=False)
-    monkeypatch.setattr('provider_backends.claude.protocol_runtime.prompt.load_claude_skills', lambda: 'SKILL BLOCK')
 
     prompt = wrap_claude_turn_prompt('hello', 'req_2')
 
-    assert prompt.startswith('CCB_REQ_ID: req_2\n\nSKILL BLOCK\n\nhello')
+    assert prompt == 'CCB_REQ_ID: req_2\n\nhello\n\n'
+    assert 'Async Ask' not in prompt
+    assert 'command ask' not in prompt

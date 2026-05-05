@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Claude Ask Prompt Cleanup
+
+- **Ask Prompt Slimmed Down**: managed Claude `ask` no longer injects the local ask skill runtime text into the prompt body, so agent-to-agent asks stay limited to the request anchor and the user's original message
+
 ## v6.0.25 (2026-05-02)
 
 ### Gemini Managed Home Alignment
