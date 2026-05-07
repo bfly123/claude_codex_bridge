@@ -163,8 +163,11 @@ def test_release_managed_venv_wraps_installed_python_entrypoints(tmp_path: Path)
 
     wrapper = tmp_path / "bin" / "ccb"
     ask_wrapper = tmp_path / "bin" / "ask"
-    assert wrapper.read_text(encoding="utf-8").startswith("#!/usr/bin/env bash")
-    assert str(tmp_path / "install" / ".venv" / "bin" / "python") in wrapper.read_text(encoding="utf-8")
+    wrapper_text = wrapper.read_text(encoding="utf-8")
+    assert wrapper_text.startswith("#!/usr/bin/env bash")
+    assert '[[ "${TERM:-}" == "xterm-ghostty" ]]' in wrapper_text
+    assert "export TERM=xterm-256color" in wrapper_text
+    assert str(tmp_path / "install" / ".venv" / "bin" / "python") in wrapper_text
     assert str(tmp_path / "install" / ".venv" / "bin" / "python") in ask_wrapper.read_text(encoding="utf-8")
 
 

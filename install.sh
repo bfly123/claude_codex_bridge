@@ -1232,6 +1232,9 @@ write_managed_venv_python_wrapper() {
   clear_installed_path "$destination_path"
   cat > "$destination_path" <<EOF
 #!/usr/bin/env bash
+if [[ "\${TERM:-}" == "xterm-ghostty" ]]; then
+  export TERM=xterm-256color
+fi
 exec "$venv_python" "$absolute_source" "\$@"
 EOF
   chmod +x "$destination_path" 2>/dev/null || true
