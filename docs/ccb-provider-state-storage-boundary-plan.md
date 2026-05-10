@@ -835,6 +835,15 @@ Implemented:
   preserves Claude current/rollback binaries plus Gemini `.gemini/tmp` session
   state. WSL also accepts either pre-relocation or relocated shared-cache
   disabled reasons.
+- Remote macOS and WSL validation passed on GitHub Actions run
+  `25632010275` for commit `d693004`:
+  <https://github.com/SeemSeam/claude_codex_bridge/actions/runs/25632010275>
+  - macOS real ccbd/ask smoke passed in `5m27s`, including lifecycle smoke,
+    communication matrix, short soak, fastpath stress, and storage cleanup
+    smoke.
+  - WSL mounted-drive ccbd/ask smoke passed in `8m40s`, including lifecycle
+    smoke, WSL path/relocation tests, communication matrix, short soak,
+    fastpath stress, and storage cleanup smoke.
 
 Not implemented yet:
 
@@ -844,7 +853,7 @@ Not implemented yet:
 
 Next recommended work:
 
-1. Trigger `CCBD Real Platform Smoke` on GitHub Actions and record the macOS
-   and WSL cleanup-smoke result here.
-2. Evaluate shared-cache redirection only after repeated Linux/macOS/WSL cleanup
+1. Evaluate shared-cache redirection only after repeated Linux/macOS/WSL cleanup
    validation proves stable.
+2. Keep `ccb cleanup` conservative until Phase D has content-addressed or
+   provider-supported shared-cache semantics.
