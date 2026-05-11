@@ -9,16 +9,17 @@ def build_start_handler(app):
             if str(item).strip()
         )
         terminal_size = _terminal_size_from_payload(payload)
-        summary = app.runtime_supervisor.start(
-            agent_names=requested,
-            restore=bool(payload.get('restore')),
-            auto_permission=bool(payload.get('auto_permission')),
-            terminal_size=terminal_size,
-        )
-        app.persist_start_policy(
-            auto_permission=bool(payload.get('auto_permission')),
-            source='start_command',
-        )
+        with app.start_maintenance_lock:
+            summary = app.runtime_supervisor.start(
+                agent_names=requested,
+                restore=bool(payload.get('restore')),
+                auto_permission=bool(payload.get('auto_permission')),
+                terminal_size=terminal_size,
+            )
+            app.persist_start_policy(
+                auto_permission=bool(payload.get('auto_permission')),
+                source='start_command',
+            )
         return summary.to_record()
 
     return handle

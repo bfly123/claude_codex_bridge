@@ -57,7 +57,7 @@ def test_ensure_project_memory_does_not_overwrite_existing_file(tmp_path: Path) 
     assert not seed_metadata_path(project_root).exists()
 
 
-def test_ensure_project_memory_imports_legacy_root_memory(tmp_path: Path) -> None:
+def test_ensure_project_memory_ignores_legacy_root_memory(tmp_path: Path) -> None:
     project_root = tmp_path / 'repo'
     project_root.mkdir()
     legacy_path = project_root / 'CCB.md'
@@ -67,8 +67,10 @@ def test_ensure_project_memory_imports_legacy_root_memory(tmp_path: Path) -> Non
 
     memory_path = project_memory_path(project_root)
     assert result.created is True
-    assert result.seed_written is False
-    assert memory_path.read_text(encoding='utf-8') == 'legacy shared memory\n'
+    assert result.seed_written is True
+    text = memory_path.read_text(encoding='utf-8')
+    assert 'This project is managed by CCB as a visible multi-agent workspace.' in text
+    assert 'legacy shared memory' not in text
     assert legacy_path.read_text(encoding='utf-8') == 'legacy shared memory\n'
 
 

@@ -952,9 +952,55 @@ def test_materialize_claude_home_config_projects_macos_keychain_login_auth(
         '-a',
         'mac-user',
         '-s',
-        'Claude Code',
+        'Claude Code-credentials',
         '-w',
     ]
+
+
+def test_materialize_claude_home_config_falls_back_to_legacy_macos_keychain_service(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    source_home = tmp_path / 'system-home'
+    target_home = tmp_path / 'managed-home'
+    source_home.mkdir(parents=True, exist_ok=True)
+    calls: list[list[str]] = []
+
+    class Result:
+        def __init__(self, returncode: int, stdout: str = '') -> None:
+            self.returncode = returncode
+            self.stdout = stdout
+            self.stderr = ''
+
+    def fake_run(argv, **kwargs):
+        calls.append([str(part) for part in argv])
+        service = calls[-1][calls[-1].index('-s') + 1]
+        if service == 'Claude Code':
+            return Result(0, json.dumps({'claudeAiOauth': {'refreshToken': 'legacy-refresh-token'}}))
+        return Result(44)
+
+    monkeypatch.setattr(claude_home_runtime.platform, 'system', lambda: 'Darwin')
+    monkeypatch.setattr(claude_home_runtime.shutil, 'which', lambda name: '/usr/bin/security')
+    monkeypatch.setattr(claude_home_runtime.subprocess, 'run', fake_run)
+    monkeypatch.setenv('USER', 'mac-user')
+
+    layout = materialize_claude_home_config(target_home, source_home=source_home)
+
+    payload = json.loads(layout.credentials_path.read_text(encoding='utf-8'))
+    assert payload['claudeAiOauth']['refreshToken'] == 'legacy-refresh-token'
+    queried_services = [call[call.index('-s') + 1] for call in calls]
+    assert queried_services == ['Claude Code-credentials', 'Claude Code-custom-oauth', 'Claude Code']
+    assert all('-a' in call for call in calls)
+
+
+def test_macos_keychain_services_keep_current_credentials_first_when_custom_oauth_enabled(monkeypatch) -> None:
+    monkeypatch.setenv('CLAUDE_CODE_CUSTOM_OAUTH_URL', 'https://oauth.example.test')
+
+    assert claude_home_runtime._macos_keychain_services() == (
+        'Claude Code-credentials',
+        'Claude Code-custom-oauth',
+        'Claude Code',
+    )
 
 
 def test_materialize_claude_home_config_preserves_runtime_hooks_and_permissions(tmp_path: Path) -> None:

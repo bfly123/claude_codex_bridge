@@ -36,41 +36,6 @@ def ensure_project_memory(project_root_or_layout, *, now: str | None = None) -> 
     created = False
     warning = ''
 
-    legacy_content = _read_legacy_project_memory(layout)
-    if legacy_content is not None:
-        try:
-            created = _atomic_create_text(path, legacy_content)
-        except OSError as exc:
-            if exc.errno == errno.EEXIST:
-                created = False
-            else:
-                return ProjectMemoryEnsureResult(
-                    path=path,
-                    seed_path=seed_path,
-                    created=False,
-                    seed_written=False,
-                    sha256='',
-                    warning=f'failed_to_import_legacy_project_memory: {exc}',
-                )
-        if created:
-            imported_hash = sha256_text(legacy_content)
-            seed_written = False
-            if imported_hash == template_hash:
-                seed_written, warning = _write_seed_metadata(
-                    seed_path,
-                    memory_path=path,
-                    memory_hash=template_hash,
-                    now=now,
-                )
-            return ProjectMemoryEnsureResult(
-                path=path,
-                seed_path=seed_path,
-                created=True,
-                seed_written=seed_written,
-                sha256=imported_hash,
-                warning=warning,
-            )
-
     try:
         created = _atomic_create_text(path, template)
     except OSError as exc:
@@ -156,16 +121,6 @@ def _write_seed_metadata(seed_path: Path, *, memory_path: Path, memory_hash: str
     except OSError as exc:
         return False, f'failed_to_write_project_memory_seed: {exc}'
     return True, ''
-
-
-def _read_legacy_project_memory(layout: PathLayout) -> str | None:
-    legacy_path = layout.project_root / 'CCB.md'
-    if not legacy_path.is_file():
-        return None
-    try:
-        return legacy_path.read_text(encoding='utf-8')
-    except OSError:
-        return None
 
 
 def _file_sha256(path: Path) -> str:

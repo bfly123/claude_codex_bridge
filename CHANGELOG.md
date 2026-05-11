@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+## v6.1.6 (2026-05-11)
+
+### Startup And Claude Auth Hotfix
+
+- **Start/Maintenance Race Fixed**: ccbd now prevents heartbeat maintenance from mutating project tmux panes while a start request is laying out and launching agents
+- **Project Memory Anchor Tightened**: CCB no longer creates, imports, or depends on project-root `CCB.md`; `.ccb/ccb_memory.md` is the only shared CCB memory anchor
+- **Claude macOS Login Inheritance Fixed**: managed Claude startup now checks the current `Claude Code-credentials` Keychain service before older service names
+
 ## v6.1.5 (2026-05-11)
 
 ### Tmux Startup Hotfix
@@ -16,7 +24,6 @@
 
 - **Shared Project Memory Landed**: `.ccb/ccb_memory.md` is now the shared project memory anchor injected into managed Claude, Codex, Gemini, and OpenCode agents during startup
 - **Per-Agent Memory Layer Added**: `.ccb/agents/<agent>/memory.md` now participates as an agent-private overlay on top of the shared project file
-- **Legacy Memory Import Added**: older root `CCB.md` content is imported into `.ccb/ccb_memory.md` when the new file is missing, without deleting the legacy file
 - **Provider Startup Contract Unified**: memory projection now runs through a single writer path with explicit launch context, stable workspace resolution, and fail-fast launch behavior across providers
 - **Gemini Managed Memory Smoke Validated**: Gemini CLI 0.41.2 was real-smoke validated against managed `.gemini/GEMINI.md` loading via `GEMINI_CLI_HOME`
 

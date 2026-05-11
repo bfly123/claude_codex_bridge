@@ -36,7 +36,7 @@ _CLAUDE_JSON_AUTH_COMPANION_KEYS = (
     'hasAvailableSubscription',
     'subscriptionNoticeCount',
 )
-_MACOS_KEYCHAIN_CLAUDE_SERVICES = ('Claude Code', 'Claude Code-custom-oauth')
+_MACOS_KEYCHAIN_CLAUDE_SERVICES = ('Claude Code-credentials', 'Claude Code-custom-oauth', 'Claude Code')
 
 
 def resolve_claude_home_layout(runtime_dir: Path, profile) -> ClaudeHomeLayout:
@@ -519,7 +519,7 @@ def _macos_keychain_services() -> tuple[str, ...]:
     custom_service = 'Claude Code-custom-oauth'
     if os.environ.get('CLAUDE_CODE_CUSTOM_OAUTH_URL') and custom_service in services:
         services.remove(custom_service)
-        services.insert(0, custom_service)
+        services.insert(1, custom_service)
     return tuple(services)
 
 

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 import os
+import threading
 import uuid
 from types import SimpleNamespace
 
@@ -56,6 +57,7 @@ def initialize_app(app, project_root: str | Path, *, clock, pid: int | None) -> 
     keeper_pid = str(os.environ.get('CCB_KEEPER_PID') or '').strip()
     app.keeper_pid = int(keeper_pid) if keeper_pid.isdigit() and int(keeper_pid) > 0 else None
     app.daemon_instance_id = uuid.uuid4().hex
+    app.start_maintenance_lock = threading.Lock()
     app.provider_catalog = build_default_provider_catalog()
     app.mount_manager = MountManager(app.paths, clock=app.clock)
     app.lifecycle_store = CcbdLifecycleStore(app.paths)

@@ -120,9 +120,7 @@ Startup may create `project_root/.ccb/ccb_memory.md` only when the file is missi
 Requirements:
 
 - Use atomic create-if-missing semantics.
-- If legacy `project_root/CCB.md` exists and `.ccb/ccb_memory.md` is missing,
-  import the legacy content into `.ccb/ccb_memory.md` without deleting the
-  legacy file.
+- Do not create, import, or otherwise rely on project-root `CCB.md`.
 - Never overwrite a user-edited `.ccb/ccb_memory.md`.
 - Record seed metadata in `<runtime_state_root>/state/memory.seed.json`.
 - If a future template version changes and the current `.ccb/ccb_memory.md` still matches

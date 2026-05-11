@@ -7,7 +7,7 @@
   <img src="https://img.shields.io/badge/Every_Model_Controllable-CF1322?style=for-the-badge" alt="Every Model Controllable">
 </p>
 
-[![Version](https://img.shields.io/badge/version-6.1.5-orange.svg)]()
+[![Version](https://img.shields.io/badge/version-6.1.6-orange.svg)]()
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey.svg)]()
 
 **English** | [Chinese](README_zh.md)
@@ -296,6 +296,15 @@ Thanks to the [Linux.do community](https://linux.do) for testing, feedback, and 
 Historical note: older release notes below may mention `askd`, legacy flags, or removed commands. Those references are kept only as changelog history and do not redefine the current CLI surface.
 
 <details open>
+<summary><b>v6.1.6</b> - Startup And Claude Auth Hotfix</summary>
+
+- Fixes a first-start race between ccbd start and heartbeat maintenance.
+- `.ccb/ccb_memory.md` is the only shared CCB memory anchor.
+- Adds Claude macOS `Claude Code-credentials` Keychain lookup.
+
+</details>
+
+<details>
 <summary><b>v6.1.5</b> - Tmux Startup Hotfix</summary>
 
 - Fixes startup races that could show `Cannot split: pane ... does not exist` or `respawn pane failed: can't find pane`.

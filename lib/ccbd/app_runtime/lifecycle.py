@@ -78,7 +78,12 @@ def start(app):
 def heartbeat(app):
     started = monotonic()
     try:
-        failures = _heartbeat_failures(app)
+        failures = ()
+        if _begin_maintenance_tick(app):
+            try:
+                failures = _heartbeat_failures(app)
+            finally:
+                _end_maintenance_tick(app)
         app.lease = app.mount_manager.refresh_heartbeat(
             expected_pid=app.pid,
             expected_daemon_instance_id=app.daemon_instance_id,
@@ -87,6 +92,26 @@ def heartbeat(app):
         return app.lease
     finally:
         app.control_plane_metrics.last_maintenance_duration_s = max(0.0, monotonic() - started)
+
+
+def _begin_maintenance_tick(app) -> bool:
+    lock = getattr(app, 'start_maintenance_lock', None)
+    if lock is None:
+        return True
+    try:
+        return bool(lock.acquire(blocking=False))
+    except TypeError:
+        return bool(lock.acquire(False))
+
+
+def _end_maintenance_tick(app) -> None:
+    lock = getattr(app, 'start_maintenance_lock', None)
+    if lock is None:
+        return
+    try:
+        lock.release()
+    except RuntimeError:
+        return
 
 
 def serve_forever(app, *, poll_interval: float = 0.2) -> None:

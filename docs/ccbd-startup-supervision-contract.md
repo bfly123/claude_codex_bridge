@@ -204,8 +204,7 @@ Managed provider startup mutation rules:
 - startup preparation must not create, delete, or rewrite project-level provider dotfiles such as `.claude/settings.json`, `.claude/settings.local.json`, `.gemini/settings.json`, `.codex/*`, or equivalent provider-owned workspace config
 - startup may create `.ccb/ccb_memory.md` under the project anchor when it is missing, but must
   treat it as user-editable project memory after creation
-- startup may import legacy project-root `CCB.md` into `.ccb/ccb_memory.md`
-  when the new file is missing, but must not delete or rewrite the legacy file
+- startup must not create, import, or otherwise rely on project-root `CCB.md`
 - startup must materialize project memory as an idempotent preparation step
   before launching a managed provider process:
   - source files are `.ccb/ccb_memory.md`, provider-native project memory such as

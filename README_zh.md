@@ -7,7 +7,7 @@
   <img src="https://img.shields.io/badge/模型皆可控-CF1322?style=for-the-badge" alt="模型皆可控">
 </p>
 
-[![Version](https://img.shields.io/badge/version-6.1.5-orange.svg)]()
+[![Version](https://img.shields.io/badge/version-6.1.6-orange.svg)]()
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey.svg)]()
 
 [English](README.md) | **中文**
@@ -294,6 +294,15 @@ ccb reinstall
 历史说明：下面较旧的发布记录里仍可能出现 `askd`、旧 flag 或已移除命令。这些内容仅作为 changelog 历史保留，不代表当前 CLI 入口。
 
 <details open>
+<summary><b>v6.1.6</b> - 启动与 Claude 认证 Hotfix</summary>
+
+- 修复首次启动时 ccbd start 与 heartbeat maintenance 的 pane 竞争。
+- `.ccb/ccb_memory.md` 是唯一的 CCB 共享记忆文档。
+- 增加 Claude macOS `Claude Code-credentials` Keychain 查找。
+
+</details>
+
+<details>
 <summary><b>v6.1.5</b> - Tmux 启动 Hotfix</summary>
 
 - 修复启动时可能出现的 `Cannot split: pane ... does not exist` 和 `respawn pane failed: can't find pane`。

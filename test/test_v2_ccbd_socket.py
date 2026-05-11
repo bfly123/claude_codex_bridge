@@ -617,6 +617,54 @@ def test_ccbd_heartbeat_skips_maintenance_steps_while_lifecycle_stopping(tmp_pat
     assert lifecycle.last_failure_reason is None
 
 
+def test_ccbd_heartbeat_skips_maintenance_while_start_lock_held(tmp_path: Path, monkeypatch) -> None:
+    project_root = tmp_path / 'repo-start-heartbeat-lock'
+    ctx = _prepare_project(project_root, _single_agent_config_text('codex', 'codex'))
+    app = CcbdApp(project_root)
+    app.lease = SimpleNamespace(generation=3)
+    app.lifecycle_store.save(
+        build_lifecycle(
+            project_id=ctx.project_id,
+            occurred_at='2026-03-18T00:00:05Z',
+            desired_state='running',
+            phase='mounted',
+            generation=3,
+            keeper_pid=app.keeper_pid,
+            owner_pid=app.pid,
+            owner_daemon_instance_id=app.daemon_instance_id,
+            config_signature=str(app.config_identity.get('config_signature') or '').strip() or None,
+            socket_path=app.paths.ccbd_socket_path,
+        )
+    )
+    monkeypatch.setattr(app.mount_manager, 'refresh_heartbeat', lambda **kwargs: app.lease)
+    monkeypatch.setattr(
+        app.health_monitor,
+        'check_all',
+        lambda: (_ for _ in ()).throw(AssertionError('health monitor should not race start')),
+    )
+    monkeypatch.setattr(
+        app.runtime_supervision,
+        'reconcile_once',
+        lambda: (_ for _ in ()).throw(AssertionError('supervision should not race start')),
+    )
+    monkeypatch.setattr(
+        app.dispatcher,
+        'tick',
+        lambda: (_ for _ in ()).throw(AssertionError('dispatcher tick should not race start')),
+    )
+
+    app.start_maintenance_lock.acquire()
+    try:
+        app.heartbeat()
+    finally:
+        app.start_maintenance_lock.release()
+
+    lifecycle = app.lifecycle_store.load()
+    assert lifecycle is not None
+    assert lifecycle.phase == 'mounted'
+    assert lifecycle.last_failure_reason is None
+
+
 def test_ping_namespace_summary(tmp_path: Path) -> None:
     project_root = tmp_path / 'repo-ping-namespace'
     ctx = _prepare_project(project_root, _single_agent_config_text('codex', 'codex'))
