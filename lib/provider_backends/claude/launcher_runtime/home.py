@@ -181,6 +181,7 @@ def _prepare_managed_home(
         )
 
     _materialize_settings(source_home, target_layout, profile=profile)
+    _materialize_macos_keychain_preferences(source_home, target_layout, profile=profile)
     _materialize_auth(source_home, target_layout, profile=profile)
     _materialize_trust(source_home, target_layout, profile=profile)
     return _materialize_inherited_assets(
@@ -448,6 +449,19 @@ def _materialize_auth(source_home: Path, target_layout: ClaudeHomeLayout, *, pro
         if source_auth.is_file():
             _sync_file(source_auth, target_auth)
     _materialize_macos_keychain_auth(target_layout)
+
+
+def _materialize_macos_keychain_preferences(source_home: Path, target_layout: ClaudeHomeLayout, *, profile) -> None:
+    target = target_layout.home_root / 'Library' / 'Preferences' / 'com.apple.security.plist'
+    if not _inherits_auth(profile):
+        _remove_file(target)
+        return
+    if platform.system() != 'Darwin':
+        return
+    _sync_file(
+        source_home / 'Library' / 'Preferences' / 'com.apple.security.plist',
+        target,
+    )
 
 
 def _projected_claude_json_payload(

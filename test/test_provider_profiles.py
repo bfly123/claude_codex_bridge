@@ -957,6 +957,69 @@ def test_materialize_claude_home_config_projects_macos_keychain_login_auth(
     ]
 
 
+def test_materialize_claude_home_config_projects_macos_keychain_preferences(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    source_home = tmp_path / 'system-home'
+    target_home = tmp_path / 'managed-home'
+    source_plist = source_home / 'Library' / 'Preferences' / 'com.apple.security.plist'
+    source_plist.parent.mkdir(parents=True, exist_ok=True)
+    source_plist.write_text(
+        '<plist><dict><key>DefaultKeychain</key><array/></dict></plist>\n',
+        encoding='utf-8',
+    )
+
+    monkeypatch.setattr(claude_home_runtime.platform, 'system', lambda: 'Darwin')
+
+    materialize_claude_home_config(target_home, source_home=source_home)
+
+    target_plist = target_home / 'Library' / 'Preferences' / 'com.apple.security.plist'
+    assert target_plist.read_text(encoding='utf-8') == source_plist.read_text(encoding='utf-8')
+
+
+def test_materialize_claude_home_config_does_not_copy_keychain_preferences_on_non_darwin(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    source_home = tmp_path / 'system-home'
+    target_home = tmp_path / 'managed-home'
+    source_plist = source_home / 'Library' / 'Preferences' / 'com.apple.security.plist'
+    source_plist.parent.mkdir(parents=True, exist_ok=True)
+    source_plist.write_text('<plist/>\n', encoding='utf-8')
+
+    monkeypatch.setattr(claude_home_runtime.platform, 'system', lambda: 'Linux')
+
+    materialize_claude_home_config(target_home, source_home=source_home)
+
+    target_plist = target_home / 'Library' / 'Preferences' / 'com.apple.security.plist'
+    assert not target_plist.exists()
+
+
+def test_materialize_claude_home_config_removes_keychain_preferences_when_auth_not_inherited(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    source_home = tmp_path / 'system-home'
+    target_home = tmp_path / 'managed-home'
+    source_plist = source_home / 'Library' / 'Preferences' / 'com.apple.security.plist'
+    target_plist = target_home / 'Library' / 'Preferences' / 'com.apple.security.plist'
+    source_plist.parent.mkdir(parents=True, exist_ok=True)
+    target_plist.parent.mkdir(parents=True, exist_ok=True)
+    source_plist.write_text('<plist><dict><key>DefaultKeychain</key><array/></dict></plist>\n', encoding='utf-8')
+    target_plist.write_text('<plist><dict><key>OldKeychain</key><array/></dict></plist>\n', encoding='utf-8')
+
+    monkeypatch.setattr(claude_home_runtime.platform, 'system', lambda: 'Darwin')
+
+    materialize_claude_home_config(
+        target_home,
+        profile=ProviderProfileSpec(inherit_auth=False, inherit_api=False),
+        source_home=source_home,
+    )
+
+    assert not target_plist.exists()
+
+
 def test_materialize_claude_home_config_falls_back_to_legacy_macos_keychain_service(
     tmp_path: Path,
     monkeypatch,
