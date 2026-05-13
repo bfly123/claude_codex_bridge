@@ -7,7 +7,7 @@
   <img src="https://img.shields.io/badge/模型皆可控-CF1322?style=for-the-badge" alt="模型皆可控">
 </p>
 
-[![Version](https://img.shields.io/badge/version-6.1.11-orange.svg)]()
+[![Version](https://img.shields.io/badge/version-6.1.12-orange.svg)]()
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey.svg)]()
 
 [English](README.md) | **中文**
@@ -74,8 +74,8 @@
 <details>
 <summary><b>最新版本亮点</b></summary>
 
-- **WSL cleanup smoke 已对齐**：mounted-drive 项目在 runtime relocation 后会验证 shared cache 为 enabled，与当前存储契约一致。
-- **Claude cleanup 更安全**：`ccb cleanup` 会保留当前 Claude Code 版本和一个 rollback 版本，只清理更旧的可重建版本缓存。
+- **Claude tmux 启动保持非交互**：auto-permission 启动会使用 `--permission-mode bypassPermissions` 和 `skipDangerousModePermissionPrompt`，避免 tmux pane 卡在无法回答的确认框。
+- **Cleanup 加固继续包含**：当前包继续包含 WSL cleanup smoke 对齐和 Claude rollback-cache 保留修复。
 - **Provider 存储继续瘦身**：Codex、Claude、Gemini 会共享或清理可重建资产，不再在每个 managed home 里重复堆积。
 
 完整历史见 [新版本记录](#新版本记录)。
@@ -296,6 +296,14 @@ ccb reinstall
 历史说明：下面较旧的发布记录里仍可能出现 `askd`、旧 flag 或已移除命令。这些内容仅作为 changelog 历史保留，不代表当前 CLI 入口。
 
 <details open>
+<summary><b>v6.1.12</b> - Claude Tmux Permission Release</summary>
+
+- 打包已合并的 Claude auto-permission pane 修复，避免 tmux 启动卡在 bypass permissions 确认框。
+- 继续包含 v6.1.11 的 WSL cleanup smoke 对齐和 Claude rollback-cache 保留修复。
+
+</details>
+
+<details>
 <summary><b>v6.1.11</b> - WSL Cleanup Smoke Alignment</summary>
 
 - WSL mounted-drive storage cleanup smoke 已对齐当前 relocated-runtime shared-cache 契约。

@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## v6.1.12 (2026-05-13)
+
+### Claude Tmux Permission Release
+
+- **Claude Tmux Permission Prompt Fix Released**: packages the merged Claude auto-permission pane fix, using `--permission-mode bypassPermissions` plus `skipDangerousModePermissionPrompt` so tmux panes do not block on an unanswerable confirmation prompt
+- **Cleanup Hardening Included**: carries forward the WSL cleanup smoke alignment and Claude rollback cache preservation from v6.1.11/v6.1.10
+
 ## v6.1.11 (2026-05-13)
 
 ### WSL Cleanup Smoke Alignment

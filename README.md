@@ -7,7 +7,7 @@
   <img src="https://img.shields.io/badge/Every_Model_Controllable-CF1322?style=for-the-badge" alt="Every Model Controllable">
 </p>
 
-[![Version](https://img.shields.io/badge/version-6.1.11-orange.svg)]()
+[![Version](https://img.shields.io/badge/version-6.1.12-orange.svg)]()
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey.svg)]()
 
 **English** | [Chinese](README_zh.md)
@@ -74,8 +74,8 @@ Build project-local teams with roles, pane layout, provider state, worktree isol
 <details>
 <summary><b>Latest release highlights</b></summary>
 
-- **WSL cleanup smoke is aligned**: mounted-drive projects with relocated runtime state now validate shared cache as enabled, matching the current storage contract.
-- **Claude cleanup is safer**: `ccb cleanup` keeps the active Claude Code version plus one rollback version while pruning older rebuildable version-cache entries.
+- **Claude tmux startup stays non-interactive**: auto-permission launches use `--permission-mode bypassPermissions` plus `skipDangerousModePermissionPrompt`, avoiding an unanswerable tmux confirmation prompt.
+- **Cleanup hardening stays included**: WSL cleanup smoke alignment and Claude rollback-cache preservation remain in the current package.
 - **Provider storage stays slimmer**: Codex, Claude, and Gemini share or prune rebuildable provider assets instead of duplicating them across managed homes.
 
 See [Release Notes](#release-notes) for the full history.
@@ -305,6 +305,14 @@ Thanks to the [Linux.do community](https://linux.do) for testing, feedback, and 
 Historical note: older release notes below may mention `askd`, legacy flags, or removed commands. Those references are kept only as changelog history and do not redefine the current CLI surface.
 
 <details open>
+<summary><b>v6.1.12</b> - Claude Tmux Permission Release</summary>
+
+- Packages the merged Claude auto-permission pane fix so tmux launches do not block on the bypass permissions confirmation prompt.
+- Carries forward the v6.1.11 WSL cleanup smoke alignment and Claude rollback-cache preservation fixes.
+
+</details>
+
+<details>
 <summary><b>v6.1.11</b> - WSL Cleanup Smoke Alignment</summary>
 
 - Aligns WSL mounted-drive storage cleanup smoke with the current relocated-runtime shared-cache contract.
