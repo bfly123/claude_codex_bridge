@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## v6.1.14 (2026-05-14)
+
+### macOS Claude Keychain Boundary Follow-up
+
+- **Keychain Fallback Contract Documented**: records the managed Claude `Library/Keychains` fallback as agent-local secret auth compatibility state
+- **Diagnostics Boundary Clarified**: support bundles must not follow the fallback Keychains symlink, and storage diagnostics classify it as secret auth state
+
 ## v6.1.13 (2026-05-14)
 
 ### macOS Claude Keychain Fallback

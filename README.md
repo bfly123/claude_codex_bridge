@@ -7,7 +7,7 @@
   <img src="https://img.shields.io/badge/Every_Model_Controllable-CF1322?style=for-the-badge" alt="Every Model Controllable">
 </p>
 
-[![Version](https://img.shields.io/badge/version-6.1.13-orange.svg)]()
+[![Version](https://img.shields.io/badge/version-6.1.14-orange.svg)]()
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey.svg)]()
 
 **English** | [Chinese](README_zh.md)
@@ -76,7 +76,7 @@ Build project-local teams with roles, pane layout, provider state, worktree isol
 
 - **macOS Claude login inheritance is more compatible**: when `com.apple.security.plist` is absent, managed Claude homes link `Library/Keychains` so the user's login keychain remains discoverable.
 - **Claude auth cleanup stays symmetric**: disabling auth inheritance removes both the Keychain preference projection and the fallback Keychains link.
-- **Storage diagnostics classify the fallback safely**: `ccb doctor storage` treats the managed Claude Keychains link as secret auth state, not unknown residue.
+- **Storage diagnostics classify the fallback safely**: `ccb doctor storage` treats the managed Claude Keychains link as secret auth state, and support bundles do not follow it.
 - **Provider storage stays slimmer**: Codex, Claude, and Gemini share or prune rebuildable provider assets instead of duplicating them across managed homes.
 
 See [Release Notes](#release-notes) for the full history.
@@ -306,6 +306,14 @@ Thanks to the [Linux.do community](https://linux.do) for testing, feedback, and 
 Historical note: older release notes below may mention `askd`, legacy flags, or removed commands. Those references are kept only as changelog history and do not redefine the current CLI surface.
 
 <details open>
+<summary><b>v6.1.14</b> - macOS Claude Keychain Boundary Follow-up</summary>
+
+- Documents the managed Claude `Library/Keychains` fallback as agent-local secret auth compatibility state.
+- Clarifies that support bundles must not follow the fallback Keychains symlink and storage diagnostics classify it as secret auth state.
+
+</details>
+
+<details>
 <summary><b>v6.1.13</b> - macOS Claude Keychain Fallback</summary>
 
 - Links `Library/Keychains` into managed Claude homes on macOS when `com.apple.security.plist` is absent, preserving Claude login lookup on newer setups.

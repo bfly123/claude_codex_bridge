@@ -7,7 +7,7 @@
   <img src="https://img.shields.io/badge/模型皆可控-CF1322?style=for-the-badge" alt="模型皆可控">
 </p>
 
-[![Version](https://img.shields.io/badge/version-6.1.13-orange.svg)]()
+[![Version](https://img.shields.io/badge/version-6.1.14-orange.svg)]()
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey.svg)]()
 
 [English](README.md) | **中文**
@@ -76,7 +76,7 @@
 
 - **macOS Claude 登录继承兼容性更好**：当 `com.apple.security.plist` 不存在时，managed Claude home 会链接 `Library/Keychains`，让用户 login keychain 仍可被发现。
 - **Claude auth 清理保持对称**：关闭 auth 继承时会同时移除 Keychain preference 投影和 fallback Keychains 链接。
-- **Storage 诊断安全分类 fallback**：`ccb doctor storage` 会把 managed Claude Keychains 链接识别为 secret auth 状态，而不是 unknown residue。
+- **Storage 诊断安全分类 fallback**：`ccb doctor storage` 会把 managed Claude Keychains 链接识别为 secret auth 状态，support bundle 也不会跟随该链接。
 - **Provider 存储继续瘦身**：Codex、Claude、Gemini 会共享或清理可重建资产，不再在每个 managed home 里重复堆积。
 
 完整历史见 [新版本记录](#新版本记录)。
@@ -297,6 +297,14 @@ ccb reinstall
 历史说明：下面较旧的发布记录里仍可能出现 `askd`、旧 flag 或已移除命令。这些内容仅作为 changelog 历史保留，不代表当前 CLI 入口。
 
 <details open>
+<summary><b>v6.1.14</b> - macOS Claude Keychain Boundary Follow-up</summary>
+
+- 将 managed Claude `Library/Keychains` fallback 记录为 agent-local secret auth 兼容状态。
+- 明确 support bundle 不能跟随 fallback Keychains symlink，storage 诊断会把它分类为 secret auth 状态。
+
+</details>
+
+<details>
 <summary><b>v6.1.13</b> - macOS Claude Keychain Fallback</summary>
 
 - macOS 上如果 `com.apple.security.plist` 不存在，会把 `Library/Keychains` 链接进 managed Claude home，保留 Claude 登录查找能力。
