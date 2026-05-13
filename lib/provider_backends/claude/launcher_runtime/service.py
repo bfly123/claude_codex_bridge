@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import json
 import shlex
 
 from provider_core.caller_env import (
@@ -66,6 +67,8 @@ def build_start_cmd(
         workspace_path=restore_target.run_cwd,
     )
     settings_path = write_settings_overlay_fn(runtime_dir, profile=profile)
+    if command.auto_permission:
+        settings_path = _ensure_skip_prompt_settings(runtime_dir, settings_path)
     env_prefix = join_env_prefix(
         build_env_prefix_fn(profile=profile, extra_env=spec.env),
         export_env_clause(provider_user_session_env()),
@@ -79,7 +82,7 @@ def build_start_cmd(
     if settings_path is not None:
         cmd_parts.extend(['--settings', str(settings_path)])
     if command.auto_permission:
-        cmd_parts.append('--dangerously-skip-permissions')
+        cmd_parts.extend(['--permission-mode', 'bypassPermissions'])
     if restore_target.has_history:
         cmd_parts.append('--continue')
     cmd_parts.extend(spec.startup_args)
@@ -145,3 +148,16 @@ def build_session_payload(
 
 
 __all__ = ['build_runtime_launcher', 'build_session_payload', 'build_start_cmd', 'prepare_runtime', 'resolve_run_cwd']
+
+
+def _ensure_skip_prompt_settings(runtime_dir: Path, existing_path: Path | None) -> Path:
+    path = existing_path or (runtime_dir / 'claude-settings.json')
+    payload = {}
+    if path.is_file():
+        try:
+            payload = json.loads(path.read_text(encoding='utf-8'))
+        except Exception:
+            pass
+    payload['skipDangerousModePermissionPrompt'] = True
+    path.write_text(json.dumps(payload, ensure_ascii=False), encoding='utf-8')
+    return path
