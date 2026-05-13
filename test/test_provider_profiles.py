@@ -1271,6 +1271,24 @@ def test_materialize_claude_home_config_projects_macos_keychain_preferences(
     assert target_plist.read_text(encoding='utf-8') == source_plist.read_text(encoding='utf-8')
 
 
+def test_materialize_claude_home_config_projects_macos_keychains_when_preferences_absent(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    source_home = tmp_path / 'system-home'
+    target_home = tmp_path / 'managed-home'
+    source_keychains = source_home / 'Library' / 'Keychains'
+    source_keychains.mkdir(parents=True, exist_ok=True)
+
+    monkeypatch.setattr(claude_home_runtime.platform, 'system', lambda: 'Darwin')
+
+    materialize_claude_home_config(target_home, source_home=source_home)
+
+    target_keychains = target_home / 'Library' / 'Keychains'
+    assert target_keychains.is_symlink()
+    assert target_keychains.resolve() == source_keychains.resolve()
+
+
 def test_materialize_claude_home_config_does_not_copy_keychain_preferences_on_non_darwin(
     tmp_path: Path,
     monkeypatch,
@@ -1311,6 +1329,30 @@ def test_materialize_claude_home_config_removes_keychain_preferences_when_auth_n
     )
 
     assert not target_plist.exists()
+
+
+def test_materialize_claude_home_config_removes_macos_keychains_when_auth_not_inherited(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    source_home = tmp_path / 'system-home'
+    target_home = tmp_path / 'managed-home'
+    source_keychains = source_home / 'Library' / 'Keychains'
+    target_keychains = target_home / 'Library' / 'Keychains'
+    source_keychains.mkdir(parents=True, exist_ok=True)
+    target_keychains.parent.mkdir(parents=True, exist_ok=True)
+    os.symlink(source_keychains, target_keychains)
+
+    monkeypatch.setattr(claude_home_runtime.platform, 'system', lambda: 'Darwin')
+
+    materialize_claude_home_config(
+        target_home,
+        profile=ProviderProfileSpec(inherit_auth=False, inherit_api=False),
+        source_home=source_home,
+    )
+
+    assert not target_keychains.exists()
+    assert not target_keychains.is_symlink()
 
 
 def test_materialize_claude_home_config_falls_back_to_legacy_macos_keychain_service(

@@ -453,15 +453,44 @@ def _materialize_auth(source_home: Path, target_layout: ClaudeHomeLayout, *, pro
 
 def _materialize_macos_keychain_preferences(source_home: Path, target_layout: ClaudeHomeLayout, *, profile) -> None:
     target = target_layout.home_root / 'Library' / 'Preferences' / 'com.apple.security.plist'
+    target_keychains = target_layout.home_root / 'Library' / 'Keychains'
     if not _inherits_auth(profile):
         _remove_file(target)
+        _remove_keychains_link(target_keychains)
         return
     if platform.system() != 'Darwin':
         return
-    _sync_file(
-        source_home / 'Library' / 'Preferences' / 'com.apple.security.plist',
-        target,
-    )
+    source = source_home / 'Library' / 'Preferences' / 'com.apple.security.plist'
+    if source.is_file():
+        _sync_file(source, target)
+        return
+    _remove_file(target)
+    _materialize_macos_keychains_link(source_home / 'Library' / 'Keychains', target_keychains)
+
+
+def _materialize_macos_keychains_link(source: Path, target: Path) -> None:
+    if not source.is_dir():
+        _remove_keychains_link(target)
+        return
+    try:
+        if target.is_symlink():
+            if target.resolve() == source.resolve():
+                return
+            target.unlink()
+        elif target.exists():
+            return
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.symlink_to(source, target_is_directory=True)
+    except Exception:
+        pass
+
+
+def _remove_keychains_link(path: Path) -> None:
+    try:
+        if path.is_symlink():
+            path.unlink()
+    except Exception:
+        pass
 
 
 def _projected_claude_json_payload(
