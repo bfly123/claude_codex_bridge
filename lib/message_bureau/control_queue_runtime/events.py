@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from mailbox_kernel import InboundEventStatus, InboundEventType
+from message_bureau.models import AttemptState
 from message_bureau.reply_metadata import (
     reply_heartbeat_silence_seconds,
     reply_last_progress_at,
@@ -16,6 +17,16 @@ TERMINAL_EVENT_STATES = frozenset(
         InboundEventStatus.CONSUMED,
         InboundEventStatus.SUPERSEDED,
         InboundEventStatus.ABANDONED,
+    }
+)
+TERMINAL_ATTEMPT_STATES = frozenset(
+    {
+        AttemptState.COMPLETED,
+        AttemptState.INCOMPLETE,
+        AttemptState.FAILED,
+        AttemptState.CANCELLED,
+        AttemptState.SUPERSEDED,
+        AttemptState.DEAD_LETTER,
     }
 )
 
@@ -60,8 +71,11 @@ def _event_is_live(service, event) -> bool:
     message = service._message_store.get_latest(event.message_id)
     if message is None:
         return False
-    if event.attempt_id and service._attempt_store.get_latest(event.attempt_id) is None:
+    attempt = service._attempt_store.get_latest(event.attempt_id) if event.attempt_id else None
+    if event.attempt_id and attempt is None:
         return False
+    if event.event_type is InboundEventType.TASK_REQUEST and attempt is not None:
+        return attempt.attempt_state not in TERMINAL_ATTEMPT_STATES
     if event.event_type is InboundEventType.TASK_REPLY and reply_for_event(service, event) is None:
         return False
     return True
