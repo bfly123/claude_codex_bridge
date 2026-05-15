@@ -2055,6 +2055,88 @@ def test_dispatcher_ack_reply_unblocks_next_task_request_after_tick(tmp_path: Pa
     assert queue['agent']['active']['job_id'] == blocked_job_id
 
 
+def test_dispatcher_ack_clears_terminal_task_request_head(tmp_path: Path) -> None:
+    project_root = tmp_path / 'repo-ack-terminal-task-request'
+    ctx = _bootstrap_test_project(project_root)
+    layout = PathLayout(project_root)
+    config = _provider_config('codex', 'claude')
+    registry = AgentRegistry(layout, config)
+    registry.upsert(_runtime('claude', project_id=ctx.project_id, layout=layout, pid=102))
+    dispatcher = JobDispatcher(layout, config, registry, clock=lambda: '2026-03-30T00:00:00Z')
+
+    receipt = dispatcher.submit(
+        MessageEnvelope(
+            project_id=ctx.project_id,
+            to_agent='claude',
+            from_actor='user',
+            body='stale task request',
+            task_id='task-stale-request',
+            reply_to=None,
+            message_type='ask',
+            delivery_scope=DeliveryScope.SINGLE,
+        )
+    )
+    job_id = receipt.jobs[0].job_id
+    dispatcher.tick()
+    attempt = dispatcher._message_bureau._attempt_store.get_latest_by_job_id(job_id)
+    assert attempt is not None
+    dispatcher._message_bureau._attempt_store.append(
+        replace(attempt, attempt_state=AttemptState.INCOMPLETE, updated_at='2026-03-30T00:00:05Z')
+    )
+
+    acked = dispatcher.ack_reply('claude')
+
+    assert acked['acknowledged_event_type'] == 'task_request'
+    assert acked['attempt_state'] == 'incomplete'
+    assert acked['job_id'] == job_id
+    queue = dispatcher.queue('claude', detail=True)
+    assert queue['agent']['mailbox_state'] == 'idle'
+    assert queue['agent']['queue_depth'] == 0
+    assert queue['agent']['active_inbound_event_id'] is None
+    latest = InboundEventStore(layout).get_latest_for_attempt('claude', attempt.attempt_id)
+    assert latest is not None
+    assert latest.status is InboundEventStatus.CONSUMED
+
+
+def test_dispatcher_queue_summary_discards_stale_terminal_task_request_head(tmp_path: Path) -> None:
+    project_root = tmp_path / 'repo-discard-terminal-task-request'
+    ctx = _bootstrap_test_project(project_root)
+    layout = PathLayout(project_root)
+    config = _provider_config('codex', 'claude')
+    registry = AgentRegistry(layout, config)
+    registry.upsert(_runtime('claude', project_id=ctx.project_id, layout=layout, pid=102))
+    dispatcher = JobDispatcher(layout, config, registry, clock=lambda: '2026-03-30T00:00:00Z')
+
+    receipt = dispatcher.submit(
+        MessageEnvelope(
+            project_id=ctx.project_id,
+            to_agent='claude',
+            from_actor='user',
+            body='auto discard stale request',
+            task_id='task-auto-discard',
+            reply_to=None,
+            message_type='ask',
+            delivery_scope=DeliveryScope.SINGLE,
+        )
+    )
+    job_id = receipt.jobs[0].job_id
+    dispatcher.tick()
+    attempt = dispatcher._message_bureau._attempt_store.get_latest_by_job_id(job_id)
+    assert attempt is not None
+    dispatcher._message_bureau._attempt_store.append(
+        replace(attempt, attempt_state=AttemptState.INCOMPLETE, updated_at='2026-03-30T00:00:05Z')
+    )
+
+    queue = dispatcher.queue('claude', detail=True)
+
+    assert queue['agent']['mailbox_state'] == 'idle'
+    assert queue['agent']['queue_depth'] == 0
+    assert queue['agent']['active_inbound_event_id'] is None
+    latest = InboundEventStore(layout).get_latest_for_attempt('claude', attempt.attempt_id)
+    assert latest is not None
+    assert latest.status is InboundEventStatus.ABANDONED
+
+
 def test_dispatcher_pending_reply_on_one_agent_does_not_block_other_agent_start(tmp_path: Path) -> None:
     project_root = tmp_path / 'repo-multi-agent-mailbox-isolation'
     ctx = _bootstrap_test_project(project_root)

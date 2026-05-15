@@ -1993,7 +1993,7 @@ def test_codex_launcher_build_start_cmd_skips_resume_when_explicit_api_authority
     assert 'resume legacy-session-id' not in cmd
 
 
-def test_codex_launcher_build_start_cmd_skips_resume_when_memory_projection_changed(
+def test_codex_launcher_build_start_cmd_resumes_when_memory_projection_changed(
     monkeypatch, tmp_path: Path
 ) -> None:
     project_root = tmp_path / 'repo-codex-memory-authority'
@@ -2051,13 +2051,12 @@ def test_codex_launcher_build_start_cmd_skips_resume_when_memory_projection_chan
 
     cmd = _codex_start_cmd(command, spec, runtime_dir, 'sess-memory-change')
 
-    assert 'resume legacy-session-id' not in cmd
+    assert cmd.endswith('resume legacy-session-id')
     data = json.loads(session_file.read_text(encoding='utf-8'))
-    assert data['old_codex_session_id'] == 'legacy-session-id'
-    assert 'codex_session_id' not in data
-    assert 'resume legacy-session-id' not in data['start_cmd']
-    assert not any(session_root.iterdir())
-    assert any((codex_home / 'archived-sessions').rglob('legacy-session.jsonl'))
+    assert data['codex_session_id'] == 'legacy-session-id'
+    assert data['codex_session_path'] == str(old_log)
+    assert old_log.is_file()
+    assert not (codex_home / 'archived-sessions').exists()
     marker = json.loads((codex_home / '.ccb-session-namespace.json').read_text(encoding='utf-8'))
     assert marker['memory_projection_sha256']
     assert marker['memory_projection_sha256'] != 'old-memory-sha'

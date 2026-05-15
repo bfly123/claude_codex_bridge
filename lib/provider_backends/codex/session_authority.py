@@ -47,15 +47,13 @@ def resume_authority_matches(
     current_fingerprint: str | None = None,
     current_memory_fingerprint: str | None = None,
 ) -> bool:
+    del current_memory_fingerprint
     current = (
         _normalized_fingerprint(current_fingerprint)
         if current_fingerprint is not None
         else current_provider_authority_fingerprint(profile)
     )
     if stored_provider_authority_fingerprint(data) != current:
-        return False
-    stored_memory = stored_memory_projection_fingerprint(data)
-    if stored_memory and stored_memory != _normalized_fingerprint(current_memory_fingerprint):
         return False
     if not has_resume_candidate(data):
         return True

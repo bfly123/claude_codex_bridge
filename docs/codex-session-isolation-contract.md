@@ -259,11 +259,13 @@ Runtime pane reuse is a separate proof obligation from session-file binding:
   the provider authority recorded for the last managed session, startup must
   skip `resume` and start a fresh Codex conversation inside the same managed
   home rather than reattaching a session created under a different route
-- when the managed `CODEX_HOME/AGENTS.md` memory projection fingerprint differs
-  from the fingerprint recorded for the last managed session, startup must also
-  skip `resume`, archive the active `sessions/` namespace, and start a fresh
-  Codex conversation; Codex resumes preserve the original AGENTS prompt context
-  and do not reliably reload updated project memory
+- managed `CODEX_HOME/AGENTS.md` memory projection fingerprints are diagnostic
+  and freshness metadata, not conversation identity; a changed memory projection
+  must not by itself skip `resume`, archive the active `sessions/` namespace, or
+  clear the bound Codex conversation
+- if updated project memory must become the initial prompt context for Codex,
+  that is an explicit fresh-start or session-switch choice rather than implicit
+  restart behavior
 - for explicit managed routes, launch-intent fingerprint alone is not sufficient
   proof for `resume`
 - a bound Codex conversation may be resumed only when

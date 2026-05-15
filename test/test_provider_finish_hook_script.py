@@ -52,6 +52,143 @@ def test_provider_finish_hook_writes_claude_completion_event(tmp_path: Path) -> 
     assert event["status"] == "completed"
 
 
+def test_provider_finish_hook_uses_outer_claude_req_id_when_body_mentions_old_req_id(tmp_path: Path) -> None:
+    project_root = Path(__file__).resolve().parents[1]
+    completion_dir = tmp_path / "completion"
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    transcript = tmp_path / "transcript.jsonl"
+    current_req_id = "job_current123abc"
+    embedded_old_req_id = "job_old456def"
+    transcript.write_text(
+        json.dumps(
+            {
+                "type": "user",
+                "message": {
+                    "role": "user",
+                    "content": (
+                        f"CCB_REQ_ID: {current_req_id}\n\n"
+                        f"CCB_REQ_ID: {embedded_old_req_id}\n\n"
+                        "Forwarded review context that contains an older request id."
+                    ),
+                },
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    payload = {
+        "hook_event_name": "Stop",
+        "transcript_path": str(transcript),
+        "last_assistant_message": "review completed",
+        "session_id": "claude-session-1",
+    }
+
+    proc = subprocess.run(
+        [
+            sys.executable,
+            str(project_root / "bin" / "ccb-provider-finish-hook"),
+            "--provider",
+            "claude",
+            "--completion-dir",
+            str(completion_dir),
+            "--agent-name",
+            "agent3",
+            "--workspace",
+            str(workspace),
+        ],
+        input=json.dumps(payload, ensure_ascii=False),
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert proc.returncode == 0, proc.stderr
+    event_path = completion_dir / "events" / f"{current_req_id}.json"
+    old_event_path = completion_dir / "events" / f"{embedded_old_req_id}.json"
+    assert event_path.exists()
+    assert not old_event_path.exists()
+    event = json.loads(event_path.read_text(encoding="utf-8"))
+    assert event["req_id"] == current_req_id
+    assert event["reply"] == "review completed"
+    assert event["status"] == "completed"
+
+
+def test_provider_finish_hook_ignores_later_claude_tool_result_req_id(tmp_path: Path) -> None:
+    project_root = Path(__file__).resolve().parents[1]
+    completion_dir = tmp_path / "completion"
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    transcript = tmp_path / "transcript.jsonl"
+    current_req_id = "job_currentabc123"
+    tool_result_req_id = "job_toolresult999"
+    transcript.write_text(
+        json.dumps(
+            {
+                "type": "user",
+                "message": {
+                    "role": "user",
+                    "content": f"CCB_REQ_ID: {current_req_id}\n\nReview this package.",
+                },
+            }
+        )
+        + "\n"
+        + json.dumps(
+            {
+                "type": "user",
+                "message": {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "tool_result",
+                            "tool_use_id": "tooluse_1",
+                            "content": f"Command output mentioned CCB_REQ_ID: {tool_result_req_id}",
+                            "is_error": False,
+                        }
+                    ],
+                },
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    payload = {
+        "hook_event_name": "Stop",
+        "transcript_path": str(transcript),
+        "last_assistant_message": "done after tools",
+        "session_id": "claude-session-1",
+    }
+
+    proc = subprocess.run(
+        [
+            sys.executable,
+            str(project_root / "bin" / "ccb-provider-finish-hook"),
+            "--provider",
+            "claude",
+            "--completion-dir",
+            str(completion_dir),
+            "--agent-name",
+            "agent3",
+            "--workspace",
+            str(workspace),
+        ],
+        input=json.dumps(payload, ensure_ascii=False),
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert proc.returncode == 0, proc.stderr
+    event_path = completion_dir / "events" / f"{current_req_id}.json"
+    tool_result_event_path = completion_dir / "events" / f"{tool_result_req_id}.json"
+    assert event_path.exists()
+    assert not tool_result_event_path.exists()
+    event = json.loads(event_path.read_text(encoding="utf-8"))
+    assert event["req_id"] == current_req_id
+    assert event["reply"] == "done after tools"
+    assert event["status"] == "completed"
+
+
 def test_provider_finish_hook_writes_gemini_failed_event_for_login_required_response(tmp_path: Path) -> None:
     project_root = Path(__file__).resolve().parents[1]
     completion_dir = tmp_path / "completion"

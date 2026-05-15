@@ -11,7 +11,6 @@ import time
 from provider_backends.codex.session_authority import (
     current_memory_projection_fingerprint,
     current_provider_authority_fingerprint,
-    stored_memory_projection_fingerprint,
     stored_provider_authority_fingerprint,
     stored_session_authority_fingerprint,
 )
@@ -295,18 +294,13 @@ def _session_namespace_requires_reset(
     current_memory_fingerprint: str,
     session_data: dict[str, object],
 ) -> bool:
+    del current_memory_fingerprint
     stored_session_fingerprint = stored_provider_authority_fingerprint(session_data)
     stored_binding_fingerprint = stored_session_authority_fingerprint(session_data)
     if stored_marker is not None:
-        return (
-            str(stored_marker.get('provider_authority_fingerprint') or '').strip() != current_fingerprint
-            or str(stored_marker.get('memory_projection_sha256') or '').strip() != current_memory_fingerprint
-        )
+        return str(stored_marker.get('provider_authority_fingerprint') or '').strip() != current_fingerprint
     if current_fingerprint:
         return True
-    stored_memory_fingerprint = stored_memory_projection_fingerprint(session_data)
-    if stored_memory_fingerprint:
-        return stored_memory_fingerprint != current_memory_fingerprint
     return bool(stored_session_fingerprint or stored_binding_fingerprint)
 
 
