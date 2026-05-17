@@ -937,13 +937,13 @@ def test_run_cli_entrypoint_prints_ask_help() -> None:
 
     assert result == 0
     assert "Usage:" in stdout.getvalue()
-    assert "ccb ask [--compact] [--silence] <target> [--] <message...>" in stdout.getvalue()
+    assert "ccb ask [--compact] [--silence] [--callback] <target> [--] <message...>" in stdout.getvalue()
     assert "--compact request a distilled reply that preserves key information" in stdout.getvalue()
     assert "--silence request silent-on-success delivery; failures/blockers still surface" in stdout.getvalue()
+    assert "--callback route the result back as a new task to the current agent" in stdout.getvalue()
     assert "ccb ask --compact agent1 review latest diff" in stdout.getvalue()
     assert "ccb ask --silence agent1 run smoke check" in stdout.getvalue()
-    assert "--wait" not in stdout.getvalue()
-    assert "--timeout" not in stdout.getvalue()
+    assert "ccb ask --callback agent2 collect evidence for this task" in stdout.getvalue()
     assert stderr.getvalue() == ""
 
 

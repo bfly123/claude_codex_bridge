@@ -18,6 +18,7 @@ def build_submit_handler(dispatcher):
             message_type=payload.get('message_type', 'ask'),
             delivery_scope=DeliveryScope(payload.get('delivery_scope', DeliveryScope.SINGLE.value)),
             silence_on_success=bool(payload.get('silence_on_success', False)),
+            route_options=dict(payload.get('route_options') or {}),
         )
         try:
             return dispatcher.submit(envelope).to_record()

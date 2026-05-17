@@ -7,6 +7,7 @@ from .execution_cleanup import cleanup_stale_execution_states
 from .finalization import complete_job
 from .lifecycle import resubmit_message, retry_attempt, submit_jobs, tick_jobs
 from .polling import poll_completion_updates
+from .callbacks import repair_callback_edges
 from .reply_delivery import prepare_reply_deliveries
 from .records import append_event, append_job, get_job, latest_for_agent, rebuild_dispatcher_state
 from .restore import build_last_restore_report, restore_running_jobs
@@ -43,6 +44,7 @@ __all__ = [
     'merge_terminal_decision',
     'poll_completion_updates',
     'prepare_reply_deliveries',
+    'repair_callback_edges',
     'rebuild_dispatcher_state',
     'resolve_targets',
     'resolve_watch_target',

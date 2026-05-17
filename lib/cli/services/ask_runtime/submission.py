@@ -14,6 +14,11 @@ _DEFAULT_REPLY_GUIDANCE = """CCB reply guidance:
 - For simple status checks, prefer a short status answer.
 - Avoid full logs, raw output, and broad background unless the ask explicitly requires them."""
 
+_NESTED_ASK_GUIDANCE = (
+    'CCB nested ask routing: inside an active CCB task, use `ask --callback` when a child result is needed, '
+    '`ask --silence` for independent no-result-needed work, and never plain nested `ask`.'
+)
+
 _COMPACT_REPLY_GUIDANCE = """CCB reply guidance:
 - Actively distill the reply while preserving the key information needed for this ask.
 - Decide the right compression level from the request context; do not use a fixed length target.
@@ -88,10 +93,17 @@ def submit_ask(
                 message_type=command.mode or 'ask',
                 delivery_scope=_delivery_scope(command.target),
                 silence_on_success=command.silence,
+                route_options=_route_options(command),
             )
         )
     )
     return _summary_from_payload(context.project.project_id, payload)
+
+
+def _route_options(command) -> dict[str, object]:
+    if not bool(getattr(command, 'callback', False)):
+        return {}
+    return {'mode': 'callback'}
 
 
 def message_with_reply_guidance(
@@ -111,7 +123,7 @@ def message_with_reply_guidance(
         guidance = _COMPACT_REPLY_GUIDANCE
     else:
         guidance = _DEFAULT_REPLY_GUIDANCE
-    return f'{str(message).rstrip()}\n\n{guidance}'
+    return f'{str(message).rstrip()}\n\n{guidance}\n\n{_NESTED_ASK_GUIDANCE}'
 
 
 def _has_explicit_output_guidance(message: str) -> bool:

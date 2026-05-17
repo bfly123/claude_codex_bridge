@@ -47,7 +47,7 @@ def test_submit_task_returns_async_status(monkeypatch) -> None:
     assert not any(str(key).endswith("_hint") for key in data)
 
 
-def test_submit_task_waits_for_terminal_reply(monkeypatch) -> None:
+def test_submit_task_returns_terminal_reply_when_requested(monkeypatch) -> None:
     module = _load_module()
     monkeypatch.setattr(module, "build_context_for", lambda work_dir: object())
     monkeypatch.setattr(

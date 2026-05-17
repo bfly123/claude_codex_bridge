@@ -64,7 +64,7 @@ def watch_ask_job(
                     if emit_output:
                         write_lines_fn(out, render_watch_batch_fn(fallback))
                     return fallback
-                raise RuntimeError(f'wait timed out for {job_id}')
+                raise RuntimeError(f'watch timed out for {job_id}')
             sleep_fn(poll_interval)
             continue
 
@@ -82,7 +82,7 @@ def watch_ask_job(
                 if emit_output:
                     write_lines_fn(out, render_watch_batch_fn(fallback))
                 return fallback
-            raise RuntimeError(f'wait timed out for {job_id}')
+            raise RuntimeError(f'watch timed out for {job_id}')
         sleep_fn(poll_interval)
 
 

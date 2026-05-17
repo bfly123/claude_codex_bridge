@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from .handlers_ask import handle_ask, handle_ask_wait
+from .handlers_ask import handle_ask
 from .handlers_mailbox import (
     handle_ack,
     handle_cancel,
@@ -30,7 +30,6 @@ from .handlers_start import handle_config_validate, handle_start
 _HANDLERS = {
     'ack': handle_ack,
     'ask': handle_ask,
-    'ask-wait': handle_ask_wait,
     'cancel': handle_cancel,
     'cleanup': handle_cleanup,
     'config-validate': handle_config_validate,

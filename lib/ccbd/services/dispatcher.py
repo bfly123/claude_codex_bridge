@@ -11,6 +11,7 @@ from .dispatcher_runtime import (
     latest_for_agent,
     poll_completion_updates,
     prepare_reply_deliveries,
+    repair_callback_edges,
     restore_running_jobs,
     submit_jobs,
     terminate_nonterminal_jobs,
@@ -110,6 +111,7 @@ class JobDispatcher(DispatcherRuntimeStateMixin, DispatcherFacadeMixin):
         return submit_jobs(self, request)
 
     def tick(self) -> tuple[JobRecord, ...]:
+        repair_callback_edges(self)
         prepare_reply_deliveries(self)
         return tick_jobs(self)
 

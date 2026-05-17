@@ -64,6 +64,10 @@ class CcbdMailboxPathMixin:
         return self.ccbd_replies_dir / 'replies.jsonl'
 
     @property
+    def ccbd_callback_edges_path(self):
+        return self.ccbd_dir / 'callbacks' / 'edges.jsonl'
+
+    @property
     def ccbd_leases_dir(self):
         return self.ccbd_dir / 'leases'
 

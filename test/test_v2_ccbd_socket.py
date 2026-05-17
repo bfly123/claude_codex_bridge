@@ -23,6 +23,7 @@ from ccbd.socket_client import CcbdClient, CcbdClientError
 from ccbd.socket_server import CcbdSocketServer
 from completion.models import CompletionConfidence, CompletionDecision, CompletionStatus
 from message_bureau import AttemptStore, MessageStore
+from message_bureau.reply_payloads import delivery_job_id_from_payload
 from mailbox_kernel import InboundEventStatus, InboundEventStore, InboundEventType
 from project.ids import compute_project_id
 from project.resolver import ProjectContext
@@ -123,6 +124,18 @@ def _wait_for_watch_payload(client: CcbdClient, job_id: str, predicate, *, timeo
             return last
         time.sleep(0.05)
     raise AssertionError(f'expected watch {job_id} payload predicate; last={last!r}')
+
+
+def _wait_for_reply_delivery_scheduled(client: CcbdClient, agent_name: str, *, timeout: float = 3.0) -> dict:
+    deadline = time.time() + timeout
+    last = None
+    while time.time() < deadline:
+        last = client.inbox(agent_name)
+        head = last.get('head') if isinstance(last, dict) else None
+        if isinstance(head, dict) and delivery_job_id_from_payload(head.get('payload_ref')):
+            return last
+        time.sleep(0.05)
+    raise AssertionError(f'expected reply delivery scheduling for {agent_name}; last={last!r}')
 
 
 def _decision(*, status: CompletionStatus = CompletionStatus.COMPLETED, reply: str = 'done') -> CompletionDecision:
@@ -1071,6 +1084,7 @@ def test_ccbd_inbox_and_ack_roundtrip_reply_delivery(tmp_path: Path) -> None:
     inbox_detail = client.inbox('claude', detail=True)
     assert inbox_detail['items']
 
+    _wait_for_reply_delivery_scheduled(client, 'claude')
     with pytest.raises(CcbdClientError, match='automatic reply delivery has been scheduled'):
         client.ack('claude')
 

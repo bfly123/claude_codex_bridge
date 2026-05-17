@@ -109,6 +109,7 @@ def _message_envelope_from_record(record: dict) -> MessageEnvelope:
         message_type=record['message_type'],
         delivery_scope=DeliveryScope(record['delivery_scope']),
         silence_on_success=bool(record.get('silence_on_success', False)),
+        route_options=dict(record.get('route_options') or {}),
     )
 
 

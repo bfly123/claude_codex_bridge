@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from .callback_edges import CallbackEdgeRecord, CallbackEdgeState, CallbackEdgeStore
 from .control import MessageBureauControlService
 from .facade import MessageBureauFacade
 from .models import (
@@ -17,6 +18,9 @@ __all__ = [
     'AttemptRecord',
     'AttemptState',
     'AttemptStore',
+    'CallbackEdgeRecord',
+    'CallbackEdgeState',
+    'CallbackEdgeStore',
     'MessageBureauControlService',
     'MessageBureauFacade',
     'MessageRecord',

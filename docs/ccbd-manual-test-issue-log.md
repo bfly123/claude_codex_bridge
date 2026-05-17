@@ -827,7 +827,7 @@
   - fastpath stress 的 submit receipt 验证与深队列 terminal convergence 验证应使用不同预算
 - 实际结果：
   - `set -o pipefail` 下 `printf '%s\n' "$out" | grep -q ...` 可能在大输出上因为 SIGPIPE 返回失败
-  - 固定 `CCB_ASK_WAIT_TIMEOUT_S=180` 小于 60 ask 深队列尾部 job 的真实串行收敛时间
+  - 固定终端收敛等待预算小于 60 ask 深队列尾部 job 的真实串行收敛时间
 - 影响范围：
   - Linux soak / stress 自动验收可信度
   - 对真实产品行为的误归因

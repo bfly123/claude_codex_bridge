@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 from agents.models import normalize_agent_name
@@ -20,6 +20,7 @@ class MessageEnvelope:
     message_type: str
     delivery_scope: DeliveryScope
     silence_on_success: bool = False
+    route_options: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         if not self.project_id:
@@ -35,6 +36,7 @@ class MessageEnvelope:
         else:
             object.__setattr__(self, "to_agent", normalize_agent_name(self.to_agent))
         object.__setattr__(self, "from_actor", normalize_actor_name(self.from_actor))
+        object.__setattr__(self, "route_options", dict(self.route_options or {}))
         if self.to_agent == "all" and self.delivery_scope is not DeliveryScope.BROADCAST:
             raise ValueError("to_agent=all requires delivery_scope=broadcast")
         if self.to_agent != "all" and self.delivery_scope is not DeliveryScope.SINGLE:
@@ -51,6 +53,7 @@ class MessageEnvelope:
             "message_type": self.message_type,
             "delivery_scope": self.delivery_scope.value,
             "silence_on_success": bool(self.silence_on_success),
+            "route_options": dict(self.route_options),
         }
 
 __all__ = ["MessageEnvelope"]

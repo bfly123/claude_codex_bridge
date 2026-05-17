@@ -62,13 +62,14 @@ def test_ask_alias_help_uses_canonical_usage(monkeypatch) -> None:
 
     assert code == 0
     text = stdout.getvalue()
-    assert 'ask [--compact] [--silence] <target> [--] <message...>' in text
+    assert 'ask [--compact] [--silence] [--callback] <target> [--] <message...>' in text
     assert '--compact request a distilled reply that preserves key information' in text
     assert '--silence request silent-on-success delivery; failures/blockers still surface' in text
+    assert '--callback route the result back as a new task to the current agent' in text
+    assert 'nested asks from active tasks must use --callback or --silence' in text
     assert 'ask --compact agent1 review latest diff' in text
     assert 'ask --silence agent1 run smoke check' in text
-    assert '--wait' not in text
-    assert '--timeout' not in text
+    assert 'ask --callback agent2 collect evidence for this task' in text
     assert '--task-id' not in text
     assert '[from <sender>]' not in text
     assert '`ask` is a compatibility alias for `ccb ask`.' in text

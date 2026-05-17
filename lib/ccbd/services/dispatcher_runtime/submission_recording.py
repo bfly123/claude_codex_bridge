@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from ccbd.api_models import AcceptedJobReceipt, JobRecord, JobStatus, SubmissionRecord, SubmitReceipt, TargetKind
 
+from .callbacks import register_callback_edge
 from .records import append_event, append_job
 from .runtime_state import sync_runtime
 from .submission_models import _JobDraft, _SubmissionPlan
@@ -120,6 +121,14 @@ def _submit_plan(dispatcher, plan: _SubmissionPlan, *, accepted_at: str) -> tupl
             accepted_at=accepted_at,
             origin_message_id=plan.origin_message_id,
         )
+        if message_id is not None:
+            register_callback_edge(
+                dispatcher,
+                request=plan.request,
+                jobs=tuple(jobs),
+                message_id=message_id,
+                accepted_at=accepted_at,
+            )
 
     return (
         SubmitReceipt(

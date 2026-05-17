@@ -139,6 +139,7 @@ def _retry_request_for_job(job) -> MessageEnvelope:
         message_type=job.request.message_type,
         delivery_scope=job.request.delivery_scope,
         silence_on_success=job.request.silence_on_success,
+        route_options=dict(job.request.route_options or {}),
     )
 
 

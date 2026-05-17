@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-TEMPLATE_VERSION = 2
+TEMPLATE_VERSION = 3
 
 DEFAULT_PROJECT_MEMORY = """# CCB Project Memory
 
@@ -17,7 +17,7 @@ This project is managed by CCB as a visible multi-agent workspace.
 
 ## Ask Communication
 
-Use CCB `ask` as a fire-and-forget handoff channel.
+Use CCB `ask` as an asynchronous handoff channel.
 
 Preferred provider form, when slash commands are available:
 
@@ -36,6 +36,12 @@ EOF
 After submitting, stop. Do not wait for the reply, poll status, or run observer
 commands such as `pend`, `watch`, or `ping` unless the user explicitly asks for
 diagnostics.
+
+When this agent is already handling an active CCB ask task and delegates work
+needed to finish that same task, use `ask --callback` so the child result returns
+as a continuation task. Use `ask --silence` only for independent work whose result
+is not needed by the active task. Plain nested `ask` from an active task is
+rejected by CCB.
 """
 
 __all__ = ['DEFAULT_PROJECT_MEMORY', 'TEMPLATE_VERSION']

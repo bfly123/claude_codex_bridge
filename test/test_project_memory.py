@@ -34,13 +34,14 @@ def test_ensure_project_memory_creates_template_and_seed(tmp_path: Path) -> None
     assert memory_path.is_file()
     text = memory_path.read_text(encoding='utf-8')
     assert 'This project is managed by CCB as a visible multi-agent workspace.' in text
-    assert 'Use CCB `ask` as a fire-and-forget handoff channel.' in text
+    assert 'Use CCB `ask` as an asynchronous handoff channel.' in text
+    assert 'Plain nested `ask` from an active task is' in text
     assert 'command ask "$TARGET"' in text
     assert 'Do not wait for the reply' in text
     assert 'ccb -h' not in text
     seed = json.loads(seed_metadata_path(project_root).read_text(encoding='utf-8'))
     assert seed['record_type'] == 'ccb_project_memory_seed'
-    assert seed['template_version'] == 2
+    assert seed['template_version'] == 3
     assert seed['memory_path'] == str(memory_path)
     assert seed['sha256'] == result.sha256
 

@@ -14,15 +14,8 @@ class ParsedAskCommand:
     mode: str | None = None
     compact: bool = False
     silence: bool = False
+    callback: bool = False
     kind: str = 'ask'
-
-
-@dataclass(frozen=True)
-class ParsedAskWaitCommand:
-    project: str | None
-    job_id: str
-    timeout_s: float | None = None
-    kind: str = 'ask-wait'
 
 
 @dataclass(frozen=True)
@@ -107,7 +100,6 @@ class ParsedAckCommand:
 __all__ = [
     'ParsedAckCommand',
     'ParsedAskCommand',
-    'ParsedAskWaitCommand',
     'ParsedCancelCommand',
     'ParsedInboxCommand',
     'ParsedPendCommand',

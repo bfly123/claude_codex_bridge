@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+## v6.2.0 (2026-05-17)
+
+### Callback Ask Chain Release
+
+- **Callback Ask Chains Added**: `ccb ask --callback <agent>` lets an active agent delegate work whose result is needed before finishing the original task; CCB resumes the parent as a continuation task when the child reply is ready.
+- **Nested Ask Guardrails Enforced**: plain nested `ask` from an active CCB task is rejected; use `--callback` for needed child results or `--silence` for independent no-result-needed work.
+- **Durable Callback Routing Added**: callback edges persist parent/child routing state, repair crash windows, and support chained continuations across multiple agents.
+- **Ask Skills And Memory Updated**: Claude, Codex, and Droid ask skills plus generated project memory now document callback delegation and stop-after-submit behavior.
+
 ## v6.1.21 (2026-05-17)
 
 ### Kill And Restart Cleanup Hotfix

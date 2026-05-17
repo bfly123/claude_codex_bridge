@@ -33,6 +33,7 @@ def build_reply_delivery_request(dispatcher, *, reply, project_id: str, agent_na
         reply_to=None,
         message_type=REPLY_DELIVERY_MESSAGE_TYPE,
         delivery_scope=DeliveryScope.SINGLE,
+        route_options={},
     )
 
 

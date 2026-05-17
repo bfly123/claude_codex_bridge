@@ -53,6 +53,7 @@ def test_submit_ask_maps_broadcast_payload_and_submission(monkeypatch: pytest.Mo
             captured['message_type'] = envelope.message_type
             captured['delivery_scope'] = envelope.delivery_scope
             captured['silence_on_success'] = envelope.silence_on_success
+            captured['route_options'] = envelope.route_options
             return {
                 'submission_id': 'sub_1',
                 'jobs': [
@@ -98,7 +99,45 @@ def test_submit_ask_maps_broadcast_payload_and_submission(monkeypatch: pytest.Mo
         'message_type': 'notify',
         'delivery_scope': DeliveryScope.BROADCAST,
         'silence_on_success': True,
+        'route_options': {},
     }
+
+
+def test_submit_ask_maps_callback_route_options(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    project_root = tmp_path / 'repo-ask-callback'
+    project_root.mkdir()
+    context = _build_context(project_root)
+    captured: dict[str, object] = {}
+
+    class _FakeClient:
+        def submit(self, envelope) -> dict:
+            captured['route_options'] = envelope.route_options
+            return {
+                'job_id': 'job_1',
+                'agent_name': 'agent2',
+                'target_name': 'agent2',
+                'status': 'accepted',
+            }
+
+    monkeypatch.setattr(
+        ask_service,
+        'load_project_config',
+        lambda project_root: SimpleNamespace(config=SimpleNamespace(agents={'agent1': {}, 'agent2': {}})),
+    )
+    monkeypatch.setattr(ask_service, 'resolve_ask_sender', lambda context, sender: 'agent1')
+    monkeypatch.setattr(
+        ask_service,
+        'invoke_mounted_daemon',
+        lambda context, allow_restart_stale, request_fn: request_fn(_FakeClient()),
+    )
+
+    summary = ask_service.submit_ask(
+        context,
+        ParsedAskCommand(project=None, target='agent2', sender=None, message='collect evidence', callback=True),
+    )
+
+    assert summary.jobs[0]['job_id'] == 'job_1'
+    assert captured['route_options'] == {'mode': 'callback'}
 
 
 def test_message_with_reply_guidance_appends_compact_default() -> None:
@@ -106,6 +145,8 @@ def test_message_with_reply_guidance_appends_compact_default() -> None:
 
     assert body.startswith('review the diff\n\nCCB reply guidance:')
     assert 'shortest reply that still preserves the key information' in body
+    assert 'CCB nested ask routing:' in body
+    assert 'ask --callback' in body
     assert 'no more than' not in body
 
 
@@ -142,6 +183,7 @@ def test_message_with_reply_guidance_uses_silent_hint_for_silenced_asks() -> Non
 
     assert 'silent-on-success delivery' in body
     assert 'shortest useful success/failure status' in body
+    assert 'CCB nested ask routing:' in body
 
 
 def test_message_with_reply_guidance_skips_non_ask_modes() -> None:
@@ -313,8 +355,8 @@ def test_watch_ask_job_reconnects_and_preserves_cursor(monkeypatch: pytest.Monke
         return next(handles)
 
     monkeypatch.setattr(ask_service, 'connect_mounted_daemon', _connect)
-    monkeypatch.setattr(ask_service, 'ask_wait_timeout_seconds', lambda: 1.0)
-    monkeypatch.setattr(ask_service, 'ask_wait_poll_interval_seconds', lambda: 0.0)
+    monkeypatch.setattr(ask_service, 'watch_timeout_seconds', lambda: 1.0)
+    monkeypatch.setattr(ask_service, 'watch_poll_interval_seconds', lambda: 0.0)
     monkeypatch.setattr(ask_service, 'render_watch_batch', lambda batch: (f'{batch.job_id}:{batch.cursor}:{batch.terminal}',))
     monkeypatch.setattr(ask_service, 'write_lines', lambda out, lines: rendered.append(lines))
     monkeypatch.setattr(ask_service.time, 'sleep', lambda seconds: None)
@@ -352,15 +394,15 @@ def test_watch_ask_job_times_out_after_reconnect_failures(monkeypatch: pytest.Mo
         'connect_mounted_daemon',
         _connect,
     )
-    monkeypatch.setattr(ask_service, 'ask_wait_timeout_seconds', lambda: 1.0)
-    monkeypatch.setattr(ask_service, 'ask_wait_poll_interval_seconds', lambda: 0.0)
+    monkeypatch.setattr(ask_service, 'watch_timeout_seconds', lambda: 1.0)
+    monkeypatch.setattr(ask_service, 'watch_poll_interval_seconds', lambda: 0.0)
     monkeypatch.setattr(ask_service.time, 'monotonic', lambda: next(clock))
     monkeypatch.setattr(ask_service.time, 'sleep', lambda seconds: None)
 
     with pytest.raises(RuntimeError) as exc_info:
         ask_service.watch_ask_job(context, 'job_1', StringIO(), timeout=None, emit_output=False)
 
-    assert str(exc_info.value) == 'wait timed out for job_1'
+    assert str(exc_info.value) == 'watch timed out for job_1'
     assert seen == [False, False]
 
 
@@ -417,8 +459,8 @@ def test_watch_ask_job_retries_when_reconnect_attempt_temporarily_fails(
         return SimpleNamespace(client=stable)
 
     monkeypatch.setattr(ask_service, 'connect_mounted_daemon', _connect)
-    monkeypatch.setattr(ask_service, 'ask_wait_timeout_seconds', lambda: 1.0)
-    monkeypatch.setattr(ask_service, 'ask_wait_poll_interval_seconds', lambda: 0.0)
+    monkeypatch.setattr(ask_service, 'watch_timeout_seconds', lambda: 1.0)
+    monkeypatch.setattr(ask_service, 'watch_poll_interval_seconds', lambda: 0.0)
     monkeypatch.setattr(ask_service.time, 'monotonic', lambda: next(clock))
     monkeypatch.setattr(ask_service.time, 'sleep', lambda seconds: None)
 

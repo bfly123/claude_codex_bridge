@@ -6,7 +6,6 @@ from .models_faults import ParsedFaultArmCommand, ParsedFaultClearCommand, Parse
 from .models_mailbox import (
     ParsedAckCommand,
     ParsedAskCommand,
-    ParsedAskWaitCommand,
     ParsedCancelCommand,
     ParsedInboxCommand,
     ParsedPendCommand,
@@ -32,7 +31,6 @@ from .models_start import (
 ParsedCommand = Union[
     ParsedAckCommand,
     ParsedAskCommand,
-    ParsedAskWaitCommand,
     ParsedCancelCommand,
     ParsedCleanupCommand,
     ParsedConfigValidateCommand,

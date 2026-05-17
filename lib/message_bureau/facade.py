@@ -11,6 +11,7 @@ from mailbox_kernel import (
 )
 from storage.paths import PathLayout
 
+from .callback_edges import CallbackEdgeRecord, CallbackEdgeState, CallbackEdgeStore
 from .facade_recording import (
     claimable_request_job_ids as _claimable_request_job_ids_impl,
     mark_attempt_started as _mark_attempt_started_impl,
@@ -21,6 +22,7 @@ from .facade_recording import (
     record_submission as _record_submission_impl,
     record_terminal as _record_terminal_impl,
 )
+from .models import ReplyTerminalStatus
 from .service_state import MessageBureauFacadeRuntimeState, MessageBureauFacadeStateMixin
 from .store import AttemptStore, MessageStore, ReplyStore
 
@@ -35,6 +37,7 @@ class MessageBureauFacade(MessageBureauFacadeStateMixin):
         message_store: MessageStore | None = None,
         attempt_store: AttemptStore | None = None,
         reply_store: ReplyStore | None = None,
+        callback_edge_store: CallbackEdgeStore | None = None,
         mailbox_store: MailboxStore | None = None,
         inbound_store: InboundEventStore | None = None,
         lease_store: DeliveryLeaseStore | None = None,
@@ -43,6 +46,7 @@ class MessageBureauFacade(MessageBureauFacadeStateMixin):
         message_store = message_store or MessageStore(layout)
         attempt_store = attempt_store or AttemptStore(layout)
         reply_store = reply_store or ReplyStore(layout)
+        callback_edge_store = callback_edge_store or CallbackEdgeStore(layout)
         mailbox_store = mailbox_store or MailboxStore(layout)
         inbound_store = inbound_store or InboundEventStore(layout)
         lease_store = lease_store or DeliveryLeaseStore(layout)
@@ -54,6 +58,7 @@ class MessageBureauFacade(MessageBureauFacadeStateMixin):
             message_store=message_store,
             attempt_store=attempt_store,
             reply_store=reply_store,
+            callback_edge_store=callback_edge_store,
             mailbox_store=mailbox_store,
             inbound_store=inbound_store,
             lease_store=lease_store,
@@ -116,6 +121,7 @@ class MessageBureauFacade(MessageBureauFacadeStateMixin):
         reply: str,
         diagnostics: dict[str, object] | None,
         finished_at: str,
+        terminal_status: ReplyTerminalStatus = ReplyTerminalStatus.INCOMPLETE,
         deliver_to_actor: str | None = None,
     ) -> str | None:
         return _record_notice_impl(
@@ -124,6 +130,7 @@ class MessageBureauFacade(MessageBureauFacadeStateMixin):
             reply=reply,
             diagnostics=diagnostics,
             finished_at=finished_at,
+            terminal_status=terminal_status,
             deliver_to_actor=deliver_to_actor,
         )
 
@@ -147,6 +154,39 @@ class MessageBureauFacade(MessageBureauFacadeStateMixin):
 
     def record_retry_attempt(self, message_id: str, job: JobRecord, *, accepted_at: str) -> str:
         return _record_retry_attempt_impl(self, message_id, job, accepted_at=accepted_at)
+
+    def set_message_state(self, message_id: str, next_state, *, updated_at: str) -> None:
+        from .facade_state import set_message_state
+
+        set_message_state(self, message_id, next_state, updated_at=updated_at)
+
+    def record_callback_edge(self, edge: CallbackEdgeRecord) -> None:
+        self._callback_edge_store.append(edge)
+
+    def callback_edge_for_child_job(self, child_job_id: str) -> CallbackEdgeRecord | None:
+        return self._callback_edge_store.get_latest_for_child_job(child_job_id)
+
+    def callback_edge_for_child_message(self, child_message_id: str) -> CallbackEdgeRecord | None:
+        return self._callback_edge_store.get_latest_for_child_message(child_message_id)
+
+    def callback_edge_for_parent_job(self, parent_job_id: str) -> CallbackEdgeRecord | None:
+        return self._callback_edge_store.get_latest_for_parent_job(parent_job_id)
+
+    def update_callback_edge(self, edge: CallbackEdgeRecord, **changes) -> CallbackEdgeRecord:
+        return self._callback_edge_store.update(edge, **changes)
+
+    def callback_edge(self, edge_id: str) -> CallbackEdgeRecord | None:
+        return self._callback_edge_store.get_latest(edge_id)
+
+    def pending_callback_edges(self) -> tuple[CallbackEdgeRecord, ...]:
+        latest: dict[str, CallbackEdgeRecord] = {}
+        for edge in self._callback_edge_store.list_all():
+            latest[edge.edge_id] = edge
+        return tuple(
+            edge
+            for edge in latest.values()
+            if edge.state in {CallbackEdgeState.PENDING, CallbackEdgeState.CHILD_COMPLETED}
+        )
 
 
 __all__ = ['MessageBureauFacade']

@@ -12,6 +12,7 @@ class MessageBureauFacadeRuntimeState:
     message_store: object
     attempt_store: object
     reply_store: object
+    callback_edge_store: object
     mailbox_store: object
     inbound_store: object
     lease_store: object
@@ -46,6 +47,10 @@ class MessageBureauFacadeStateMixin:
     @property
     def _reply_store(self):
         return self._runtime_state.reply_store
+
+    @property
+    def _callback_edge_store(self):
+        return self._runtime_state.callback_edge_store
 
     @property
     def _mailbox_store(self):

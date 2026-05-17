@@ -680,3 +680,56 @@ The repair plan must be:
 - preserve provider-specific completion families
 - add one control-plane-owned timeout closure path
 - make hook evidence turn-scoped instead of blindly terminal
+
+## 15. Callback Ask Continuations
+
+Nested synchronous `ask` is not a supported completion model. When agent A is
+running an active mailbox request, a normal child ask to agent B can complete
+and queue a `TASK_REPLY` back to A, but that reply cannot be delivered while
+A's active request is still the mailbox head. Agents must not wait or poll for
+that child reply inside the same turn.
+
+`ccb ask --callback <target>` provides the stable handoff for this case:
+
+- it is valid only from an agent that currently owns an active parent job
+- the child request is recorded with a durable callback edge
+- the parent job may complete as delegated and suppress normal reply delivery
+- the parent message remains open until a continuation attempt produces the
+  final reply
+- the child result is recorded as a `ReplyRecord` but is not delivered as a
+  normal `TASK_REPLY` to the parent agent
+- when the child logical message reaches a terminal reply, CCB submits a normal
+  `callback_continuation` `TASK_REQUEST` back to the parent agent
+- the continuation uses the original caller as `from_actor`, preserving the
+  normal final reply routing path
+
+While an agent owns an active parent job, CCB rejects plain nested `ask`
+submissions unless they are explicitly `--callback` or `--silence`. This guard
+keeps accidental nested dependencies from completing into an undeliverable
+`TASK_REPLY`; `--callback` is for needed child results, and `--silence` is for
+independent no-result-needed work.
+
+The first supported callback model is intentionally narrow:
+
+- one outstanding callback child per parent job
+- no inline provider-pane injection
+- no mailbox FIFO bypass
+- no fan-out / fan-in aggregation
+- nested callback chains are supported because each level is a normal
+  delegated parent plus later continuation
+
+Durability is owned by callback edge records under the ccbd mailbox state. A
+callback edge records the parent job/message, child job/message, original
+caller, callback target, child reply id/status, continuation job/message, and
+state. Dispatcher maintenance must repair the crash window where the child
+reply was recorded and the continuation was not yet submitted. Repair is
+idempotent: an edge with an existing continuation job is not submitted again.
+
+Callback edge state is also the backend safety boundary for nested delegation.
+Edges must carry a timeout deadline, and dispatcher maintenance must transition
+expired pending edges to a terminal timeout state, persist a failed reply on the
+parent message, and deliver that failure to the original caller when the caller
+owns a mailbox. Callback submission must enforce a bounded chain depth and
+reject actor cycles before creating the child job. If continuation submission
+fails after the child has completed, the edge must transition to a terminal
+failed state and the parent message must not remain indefinitely running.

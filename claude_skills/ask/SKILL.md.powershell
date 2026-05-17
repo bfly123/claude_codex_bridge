@@ -12,6 +12,8 @@ Use this only for `/ask <target> <message...>`.
 - Plain `ask` injects concise-reply guidance while still delivering the full reply body.
 - Use `--compact` when the caller wants an actively distilled answer, such as review findings, status, risks, blockers, or next actions.
 - Use `--silence` when success does not need a body; failures, blockers, or required next actions should still surface.
+- Use `--callback` only from inside an active CCB task when this agent needs the target's result before finishing the original task. The current turn must end after submit; CCB will route the target result back as a new continuation task.
+- Plain nested `ask` from an active CCB task is rejected; choose `--callback` for needed results or `--silence` for independent no-result-needed work.
 - Do not manually append output-policy text; `ask` injects reply guidance.
 
 PowerShell equivalent of the heredoc form. Always pipe a single-quoted here-string (`@'...'@`) to `FilePath "ask"` on stdin - the heredoc form is the only allowed form.
@@ -22,6 +24,6 @@ $MESSAGE
 '@ | & { Start-Process -NoNewWindow -FilePath "ask" -ArgumentList @("$TARGET") -RedirectStandardInput $input }
 ```
 
-Use `-ArgumentList @("--compact", "$TARGET")` for compact replies and `-ArgumentList @("--silence", "$TARGET")` for silent-on-success delivery.
+Use `-ArgumentList @("--compact", "$TARGET")` for compact replies, `-ArgumentList @("--silence", "$TARGET")` for silent-on-success delivery, and `-ArgumentList @("--callback", "$TARGET")` for callback continuations.
 
-After the command returns, immediately end the turn. Do not wait for a reply, do not run `pend` / `ping` / `watch`, do not poll, do not add commentary.
+After the command returns, immediately end the turn. Do not wait for a reply, do not run `pend` / `ping` / `watch`, do not poll, do not add commentary. For `--callback`, report only that delegation was submitted; the final result belongs in the later continuation task.

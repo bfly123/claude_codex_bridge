@@ -7,7 +7,7 @@
   <img src="https://img.shields.io/badge/Every_Model_Controllable-CF1322?style=for-the-badge" alt="Every Model Controllable">
 </p>
 
-[![Version](https://img.shields.io/badge/version-6.1.21-orange.svg)]()
+[![Version](https://img.shields.io/badge/version-6.2.0-orange.svg)]()
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey.svg)]()
 
 **English** | [Chinese](README_zh.md)
@@ -74,10 +74,10 @@ Build project-local teams with roles, pane layout, provider state, worktree isol
 <details>
 <summary><b>Latest release highlights</b></summary>
 
-- **Forced kill finalization is reliable**: `ccb kill -f` now still runs daemon cleanup even when the issuing pane disappears before the socket response is written.
-- **Project kill cleanup is more tightly scoped**: tmux socket paths, lifecycle owner/keeper pids, and control-plane fallback matching now stay bound to the current project.
-- **Restart clears stale execution residue**: cancelled, completed, or missing jobs no longer leave provider execution files that `doctor` reports as active or recoverable work.
-- **Shutdown contracts are documented**: startup and kill cleanup requirements now cover finalizer queuing, scoped process cleanup, tmux socket paths, and stale execution-state removal.
+- **Callback ask chains are supported**: active agents can use `ccb ask --callback <agent>` when a child result is needed before replying to the original caller.
+- **Nested ask routing is explicit**: plain nested `ask` from an active CCB task is rejected; use `--callback` for needed results or `--silence` for independent no-result-needed work.
+- **Callback routing is durable**: CCB records callback edges, resumes the parent as a continuation task, and repairs crash windows before submitting missed continuations.
+- **Ask skills explain the workflow**: Claude, Codex, and Droid ask skills now document callback delegation and stop-after-submit behavior.
 
 See [Release Notes](#release-notes) for the full history.
 
@@ -258,6 +258,20 @@ CCB is agent-first. You can use explicit `/ask`, explicit `$ask`, or let one age
 
 Use explicit routing when you want a specific target. Use natural language when you want the current agent to decide whether to delegate.
 
+### Chained Ask Calls
+
+Normal `ask` is asynchronous: submit the handoff, then stop. When an agent is already handling a CCB task and needs another agent's result before it can finish, it must use callback routing:
+
+```bash
+ccb ask --callback reviewer <<'EOF'
+Review this failing test and return the minimal blocker.
+EOF
+```
+
+CCB records the parent/child link, lets the current turn end, and later delivers the child result back to the parent agent as a new continuation task. This supports chains such as `agent2 -> agent4 -> agent1 -> agent3` without polling or blocking the active mailbox head.
+
+Use plain `ask` only outside an active task. Inside an active CCB task, use `--callback` when the child result is required, or `--silence` for independent work whose successful result does not need to return.
+
 Note: for implicit use, add the `ask` skill basics to your system memory first; otherwise Codex/Claude may fall back to their own built-in multi-agent behavior instead of calling CCB `ask`.
 
 ---
@@ -306,6 +320,16 @@ Thanks to the [Linux.do community](https://linux.do) for testing, feedback, and 
 Historical note: older release notes below may mention `askd`, legacy flags, or removed commands. Those references are kept only as changelog history and do not redefine the current CLI surface.
 
 <details open>
+<summary><b>v6.2.0</b> - Callback Ask Chain Release</summary>
+
+- Adds `ccb ask --callback <agent>` so active agents can delegate work and receive the child result later as a continuation task.
+- Rejects accidental plain nested `ask` from active CCB tasks; `--callback` is for required child results and `--silence` is for independent no-result-needed work.
+- Persists callback edges and repairs missed continuation submissions across dispatcher restarts.
+- Updates Claude, Codex, and Droid ask skills plus generated project memory with callback-chain guidance.
+
+</details>
+
+<details>
 <summary><b>v6.1.21</b> - Kill And Restart Cleanup Hotfix</summary>
 
 - Keeps `ccb kill -f` finalization queued even if the client pane is destroyed before the daemon can write the socket response.

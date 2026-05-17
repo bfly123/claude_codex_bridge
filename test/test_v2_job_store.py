@@ -221,6 +221,40 @@ def test_job_store_roundtrips_silence_on_success_request_flag(tmp_path: Path) ->
     assert latest.request.silence_on_success is True
 
 
+def test_job_store_roundtrips_request_route_options(tmp_path: Path) -> None:
+    layout = PathLayout(tmp_path / 'repo-job-store-route-options')
+    store = JobStore(layout)
+    envelope = MessageEnvelope(
+        project_id='project-1',
+        to_agent='agent1',
+        from_actor='agent2',
+        body='hello',
+        task_id=None,
+        reply_to=None,
+        message_type='ask',
+        delivery_scope=DeliveryScope.SINGLE,
+        route_options={'mode': 'callback', 'callback_edge_id': 'cb_1'},
+    )
+    record = JobRecord(
+        job_id='job_route_options',
+        submission_id=None,
+        agent_name='agent1',
+        provider='codex',
+        request=envelope,
+        status=JobStatus.ACCEPTED,
+        terminal_decision=None,
+        cancel_requested_at=None,
+        created_at='2026-03-30T00:00:00Z',
+        updated_at='2026-03-30T00:00:00Z',
+    )
+
+    store.append(record)
+
+    latest = store.get_latest('agent1', 'job_route_options')
+    assert latest is not None
+    assert latest.request.route_options == {'mode': 'callback', 'callback_edge_id': 'cb_1'}
+
+
 def test_event_store_supports_explicit_target_lookup(tmp_path: Path) -> None:
     layout = PathLayout(tmp_path / 'repo')
     event_store = JobEventStore(layout)

@@ -8,7 +8,6 @@ import pytest
 from cli.models import (
     ParsedAckCommand,
     ParsedAskCommand,
-    ParsedAskWaitCommand,
     ParsedCancelCommand,
     ParsedCleanupCommand,
     ParsedConfigValidateCommand,
@@ -187,15 +186,14 @@ def test_parse_ask_with_compact_flag(parser: CliParser) -> None:
     )
 
 
-def test_parse_ask_ignores_hidden_legacy_wait_flags(parser: CliParser) -> None:
-    parsed = parser.parse(
-        ['ask', '--wait', '--timeout', '30', '--output', '/tmp/reply.txt', 'agent1', 'ship', 'it']
-    )
+def test_parse_ask_with_callback_flag(parser: CliParser) -> None:
+    parsed = parser.parse(['ask', '--callback', 'agent1', 'from', 'agent2', 'collect', 'evidence'])
     assert parsed == ParsedAskCommand(
         project=None,
         target='agent1',
-        sender=None,
-        message='ship it',
+        sender='agent2',
+        message='collect evidence',
+        callback=True,
     )
 
 
@@ -211,8 +209,7 @@ def test_parse_ask_rejects_removed_alias_flags(parser: CliParser, argv: list[str
         parser.parse(argv)
 
 
-def test_parse_ask_wait_get_and_cancel_subcommands(parser: CliParser) -> None:
-    assert parser.parse(['ask', 'wait', 'job_123']) == ParsedAskWaitCommand(project=None, job_id='job_123')
+def test_parse_ask_get_and_cancel_subcommands(parser: CliParser) -> None:
     assert parser.parse(['ask', 'get', 'job_123']) == ParsedPendCommand(project=None, target='job_123', count=None)
     assert parser.parse(['ask', 'cancel', 'job_123']) == ParsedCancelCommand(project=None, job_id='job_123')
 
