@@ -7,7 +7,7 @@
   <img src="https://img.shields.io/badge/Every_Model_Controllable-CF1322?style=for-the-badge" alt="Every Model Controllable">
 </p>
 
-[![Version](https://img.shields.io/badge/version-6.2.2-orange.svg)]()
+[![Version](https://img.shields.io/badge/version-6.2.1-orange.svg)]()
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey.svg)]()
 
 **English** | [Chinese](README_zh.md)
@@ -77,7 +77,7 @@ Build project-local teams with roles, pane layout, provider state, worktree isol
 - **Callback ask chains are supported**: active agents can use `ccb ask --callback <agent>` when a child result is needed before replying to the original caller.
 - **Nested ask routing is explicit**: plain nested `ask` from an active CCB task is rejected; use `--callback` for needed results or `--silence` for independent no-result-needed work.
 - **Callback routing is durable**: CCB records callback edges, resumes the parent as a continuation task, and repairs crash windows before submitting missed continuations.
-- **Release smoke follows the new ask contract**: real-platform smoke coverage watches jobs with `ccb pend --watch`, uses `--silence` for independent nested stress asks, and remains compatible with macOS Bash.
+- **Release smoke follows the new ask contract**: real-platform smoke coverage now watches jobs with `ccb pend --watch` and uses `--silence` for independent nested stress asks.
 - **Ask skills explain the workflow**: Claude, Codex, and Droid ask skills now document callback delegation and stop-after-submit behavior.
 
 See [Release Notes](#release-notes) for the full history.
@@ -321,14 +321,6 @@ Thanks to the [Linux.do community](https://linux.do) for testing, feedback, and 
 Historical note: older release notes below may mention `askd`, legacy flags, or removed commands. Those references are kept only as changelog history and do not redefine the current CLI surface.
 
 <details open>
-<summary><b>v6.2.2</b> - macOS Fastpath Smoke Compatibility Hotfix</summary>
-
-- Keeps fastpath stress compatible with macOS Bash by avoiding empty array expansion for user-origin asks.
-- Preserves `--silence` for independent active-agent asks and plain `ask` coverage for user-origin asks.
-
-</details>
-
-<details>
 <summary><b>v6.2.1</b> - Callback Ask Chain Validation Hotfix</summary>
 
 - Updates real-platform smoke scripts to watch submitted jobs with `ccb pend --watch <job_id>`.

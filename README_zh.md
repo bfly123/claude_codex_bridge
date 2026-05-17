@@ -7,7 +7,7 @@
   <img src="https://img.shields.io/badge/模型皆可控-CF1322?style=for-the-badge" alt="模型皆可控">
 </p>
 
-[![Version](https://img.shields.io/badge/version-6.2.2-orange.svg)]()
+[![Version](https://img.shields.io/badge/version-6.2.1-orange.svg)]()
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey.svg)]()
 
 [English](README.md) | **中文**
@@ -77,7 +77,7 @@
 - **支持 callback ask 链式调用**：正在处理 CCB 任务的 agent 可用 `ccb ask --callback <agent>` 委派必须等待结果的子任务。
 - **Nested ask 路由变为显式规则**：active CCB task 内 plain nested `ask` 会被拒绝；需要结果用 `--callback`，独立无需结果的工作用 `--silence`。
 - **Callback 路由可持久恢复**：CCB 会记录 callback edge，把子任务结果作为 continuation task 交回父 agent，并修复重启窗口里的漏交 continuation。
-- **Release smoke 跟随新 ask 契约**：真实平台 smoke 用 `ccb pend --watch` 观察 job，在独立 nested stress ask 中使用 `--silence`，并兼容 macOS Bash。
+- **Release smoke 跟随新 ask 契约**：真实平台 smoke 现在用 `ccb pend --watch` 观察 job，并在独立 nested stress ask 中使用 `--silence`。
 - **Ask skill 已补齐工作流说明**：Claude、Codex 和 Droid ask skill 现在记录 callback 委派和提交后停止的规则。
 
 完整历史见 [新版本记录](#新版本记录)。
@@ -312,14 +312,6 @@ ccb reinstall
 历史说明：下面较旧的发布记录里仍可能出现 `askd`、旧 flag 或已移除命令。这些内容仅作为 changelog 历史保留，不代表当前 CLI 入口。
 
 <details open>
-<summary><b>v6.2.2</b> - macOS Fastpath Smoke Compatibility Hotfix</summary>
-
-- fastpath stress 避免空数组展开，保持 macOS Bash 下 user-origin ask 可可靠提交。
-- 保留 active-agent 独立 ask 使用 `--silence`，同时继续覆盖 user-origin plain `ask`。
-
-</details>
-
-<details>
 <summary><b>v6.2.1</b> - Callback Ask Chain Validation Hotfix</summary>
 
 - 真实平台 smoke 脚本改用 `ccb pend --watch <job_id>` 观察已提交 job。

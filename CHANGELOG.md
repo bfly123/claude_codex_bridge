@@ -2,13 +2,6 @@
 
 ## Unreleased
 
-## v6.2.2 (2026-05-17)
-
-### macOS Fastpath Smoke Compatibility Hotfix
-
-- **macOS Smoke Script Fixed**: fastpath stress now avoids empty bash array expansion so macOS Bash can submit non-silent user-origin asks reliably.
-- **6.2 Validation Preserved**: keeps `--silence` for independent active-agent stress asks while preserving plain user-origin ask coverage.
-
 ## v6.2.1 (2026-05-17)
 
 ### Callback Ask Chain Validation Hotfix
