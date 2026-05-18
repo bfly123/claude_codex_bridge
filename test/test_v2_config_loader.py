@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import tomllib
 
 import pytest
 
@@ -1069,3 +1070,54 @@ def test_load_project_config_reports_actionable_error_when_hybrid_overlay_parser
 
     with pytest.raises(ConfigValidationError, match='rich TOML config requires Python 3.11\\+'):
         load_project_config(project_root)
+
+
+def test_render_toml_value_service_handles_dict_inline_table() -> None:
+    from agents.config_loader_runtime.defaults_runtime.rendering_runtime.service import _render_toml_value
+    result = _render_toml_value({'key': 'val', 'count': 3})
+    assert result == '{ key = "val", count = 3 }'
+
+
+def test_render_toml_value_service_handles_empty_dict() -> None:
+    from agents.config_loader_runtime.defaults_runtime.rendering_runtime.service import _render_toml_value
+    result = _render_toml_value({})
+    assert result == '{}'
+
+
+def test_render_toml_value_service_handles_dict_in_mixed_list() -> None:
+    from agents.config_loader_runtime.defaults_runtime.rendering_runtime.service import _render_toml_value
+    result = _render_toml_value(['literal', {'key': 'val'}])
+    assert result == '["literal", { key = "val" }]'
+
+
+def test_render_toml_mapping_handles_array_of_tables() -> None:
+    from agents.config_loader_runtime.defaults_runtime.rendering_runtime.service import _render_toml_document
+    payload = {
+        'items': [
+            {'name': 'first', 'value': 1},
+            {'name': 'second', 'value': 2},
+        ]
+    }
+    rendered = _render_toml_document(payload)
+    assert '[[items]]' in rendered
+    assert 'name = "first"' in rendered
+    assert 'value = 1' in rendered
+    assert 'name = "second"' in rendered
+    assert 'value = 2' in rendered
+
+
+def test_render_toml_mapping_handles_array_of_tables_with_only_child_tables() -> None:
+    from agents.config_loader_runtime.defaults_runtime.rendering_runtime.service import _render_toml_document
+    payload = {
+        'items': [
+            {'child': {'x': 1}},
+            {'child': {'x': 2}},
+        ]
+    }
+    rendered = _render_toml_document(payload)
+    assert tomllib.loads(rendered) == {
+        'items': [
+            {'child': {'x': 1}},
+            {'child': {'x': 2}},
+        ]
+    }
