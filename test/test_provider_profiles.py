@@ -4,6 +4,7 @@ import json
 import os
 from pathlib import Path
 import shutil
+import tomllib
 
 import pytest
 
@@ -2336,3 +2337,93 @@ def test_materialize_gemini_home_config_skips_memory_without_project_context(tmp
     layout = materialize_gemini_home_config(target_home, source_home=source_home)
 
     assert not (layout.gemini_dir / 'GEMINI.md').exists()
+
+
+def test_render_toml_value_handles_dict_inline_table() -> None:
+    from provider_profiles.codex_home_config import _render_toml_value
+    result = _render_toml_value({'name': 'test', 'enabled': False})
+    assert result == '{ name = "test", enabled = false }'
+
+
+def test_render_toml_value_handles_empty_dict() -> None:
+    from provider_profiles.codex_home_config import _render_toml_value
+    result = _render_toml_value({})
+    assert result == '{}'
+
+
+def test_render_toml_value_handles_dict_in_mixed_list() -> None:
+    from provider_profiles.codex_home_config import _render_toml_value
+    result = _render_toml_value(['literal', {'name': 'test'}])
+    assert result == '["literal", { name = "test" }]'
+
+
+def test_render_toml_sections_handles_array_of_tables() -> None:
+    from provider_profiles.codex_home_config import _render_toml_sections
+    payload = {
+        'skills': {
+            'config': [
+                {'path': '/a/skill.md', 'enabled': False},
+                {'name': 'plugin:skill', 'enabled': True},
+            ]
+        }
+    }
+    sections = _render_toml_sections(payload)
+    rendered = '\n\n'.join(sections)
+    assert '[[skills.config]]' in rendered
+    assert 'path = "/a/skill.md"' in rendered
+    assert 'enabled = false' in rendered
+    assert 'name = "plugin:skill"' in rendered
+    assert 'enabled = true' in rendered
+
+
+def test_render_toml_sections_handles_array_of_tables_with_only_child_tables() -> None:
+    from provider_profiles.codex_home_config import _render_toml_document
+    payload = {
+        'items': [
+            {'child': {'x': 1}},
+            {'child': {'x': 2}},
+        ]
+    }
+    rendered = _render_toml_document(payload)
+    assert tomllib.loads(rendered) == {
+        'items': [
+            {'child': {'x': 1}},
+            {'child': {'x': 2}},
+        ]
+    }
+
+
+def test_materialize_codex_home_config_with_skills_config_array(tmp_path: Path) -> None:
+    source_home = tmp_path / 'codex-home'
+    target_home = tmp_path / 'target-home'
+    source_home.mkdir(parents=True, exist_ok=True)
+    (source_home / 'config.toml').write_text(
+        'model = "gpt-5.5"\n'
+        '\n'
+        '[[skills.config]]\n'
+        'path = "/a/skill.md"\n'
+        'enabled = false\n'
+        '\n'
+        '[[skills.config]]\n'
+        'name = "plugin:other"\n'
+        'enabled = true\n'
+        '\n'
+        '[features]\n'
+        'unified_exec = true\n',
+        encoding='utf-8',
+    )
+
+    codex_home_config.materialize_codex_home_config(
+        target_home,
+        source_home=source_home,
+    )
+
+    text = (target_home / 'config.toml').read_text(encoding='utf-8')
+    assert '[[skills.config]]' in text
+    assert 'path = "/a/skill.md"' in text
+    assert 'name = "plugin:other"' in text
+    parsed = tomllib.loads(text)
+    assert parsed['skills']['config'] == [
+        {'path': '/a/skill.md', 'enabled': False},
+        {'name': 'plugin:other', 'enabled': True},
+    ]

@@ -39,9 +39,11 @@ def _render_toml_mapping(
     mapping: dict[str, object],
     *,
     emit_header: bool,
+    is_array: bool = False,
 ) -> None:
     scalar_items: list[tuple[str, object]] = []
     table_items: list[tuple[str, dict[str, object]]] = []
+    array_items: list[tuple[str, list[dict[str, object]]]] = []
     for key, value in mapping.items():
         if value is None:
             continue
@@ -49,17 +51,23 @@ def _render_toml_mapping(
             if not value:
                 continue
             table_items.append((key, value))
+        elif isinstance(value, list) and value and all(isinstance(item, dict) for item in value):
+            array_items.append((key, value))
         else:
             scalar_items.append((key, value))
 
-    if emit_header and (scalar_items or not table_items):
+    if emit_header and (is_array or scalar_items or not table_items and not array_items):
         if lines:
             lines.append('')
-        lines.append(f'[{_render_toml_path(path)}]')
+        header = f'[[{_render_toml_path(path)}]]' if is_array else f'[{_render_toml_path(path)}]'
+        lines.append(header)
     for key, value in scalar_items:
         lines.append(f'{_render_toml_key(key)} = {_render_toml_value(value)}')
     for key, value in table_items:
         _render_toml_mapping(lines, (*path, key), value, emit_header=True)
+    for key, items in array_items:
+        for item in items:
+            _render_toml_mapping(lines, (*path, key), item, emit_header=True, is_array=True)
 
 
 def _render_toml_path(path: tuple[str, ...]) -> str:
@@ -79,6 +87,14 @@ def _render_toml_value(value: object) -> str:
         return json.dumps(value, ensure_ascii=False)
     if isinstance(value, list):
         return '[' + ', '.join(_render_toml_value(item) for item in value) + ']'
+    if isinstance(value, dict):
+        if not value:
+            return '{}'
+        pairs = ', '.join(
+            f'{_render_toml_key(k)} = {_render_toml_value(v)}'
+            for k, v in value.items()
+        )
+        return '{ ' + pairs + ' }'
     raise TypeError(f'unsupported TOML value type: {type(value).__name__}')
 
 

@@ -640,10 +640,11 @@ def _render_toml_document(payload: dict[str, object]) -> str:
     return f'{rendered}\n' if rendered else ''
 
 
-def _render_toml_sections(payload: dict[str, object], *, path: tuple[str, ...]) -> list[str]:
+def _render_toml_sections(payload: dict[str, object], *, path: tuple[str, ...] = (), is_array: bool = False) -> list[str]:
     scalar_lines: list[str] = []
     child_sections: list[str] = []
     child_tables: list[tuple[str, dict[str, object]]] = []
+    array_tables: list[tuple[str, list[dict[str, object]]]] = []
     for raw_key, value in payload.items():
         key = str(raw_key)
         if value is None:
@@ -651,20 +652,26 @@ def _render_toml_sections(payload: dict[str, object], *, path: tuple[str, ...]) 
         if isinstance(value, dict):
             child_tables.append((key, value))
             continue
+        if isinstance(value, list) and value and all(isinstance(item, dict) for item in value):
+            array_tables.append((key, value))
+            continue
         scalar_lines.append(f'{_render_toml_key(key)} = {_render_toml_value(value)}')
 
     sections: list[str] = []
     if path:
-        header = f'[{_render_toml_path(path)}]'
-        if scalar_lines:
+        header = f'[[{_render_toml_path(path)}]]' if is_array else f'[{_render_toml_path(path)}]'
+        if is_array or scalar_lines:
             sections.append('\n'.join([header, *scalar_lines]))
-        elif not child_tables:
+        elif not child_tables and not array_tables:
             sections.append(header)
     elif scalar_lines:
         sections.append('\n'.join(scalar_lines))
 
     for key, child in child_tables:
         child_sections.extend(_render_toml_sections(child, path=(*path, key)))
+    for key, items in array_tables:
+        for item in items:
+            child_sections.extend(_render_toml_sections(item, path=(*path, key), is_array=True))
     sections.extend(child_sections)
     return sections
 
@@ -694,6 +701,14 @@ def _render_toml_value(value: object) -> str:
         return value.isoformat()
     if isinstance(value, (list, tuple)):
         return '[' + ', '.join(_render_toml_value(item) for item in value) + ']'
+    if isinstance(value, dict):
+        if not value:
+            return '{}'
+        pairs = ', '.join(
+            f'{_render_toml_key(k)} = {_render_toml_value(v)}'
+            for k, v in value.items()
+        )
+        return '{ ' + pairs + ' }'
     raise TypeError(f'unsupported TOML value type: {type(value).__name__}')
 
 
