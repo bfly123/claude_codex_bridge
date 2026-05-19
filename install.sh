@@ -203,11 +203,13 @@ Optional environment variables:
   CODEX_CLAUDE_COMMAND_DIR Custom Claude commands directory (default: auto-detect)
   CCB_DROID_AUTOINSTALL    Auto-register Droid MCP tools if droid exists (default: 1)
   CCB_DROID_AUTOINSTALL_FORCE Re-register Droid MCP tools (default: 0)
+  CCB_DROID_AUTOINSTALL_TIMEOUT_S Timeout for Droid MCP registration (default: 10)
   CCB_BUILD_CHANNEL        Override build channel metadata (e.g. stable, preview, dev)
   CCB_BUILD_PLATFORM       Override build platform metadata (default: detected platform)
   CCB_BUILD_ARCH           Override build arch metadata (default: uname -m)
   CCB_BUILD_TIME           Override build timestamp metadata (default: current UTC time)
   CCB_SOURCE_KIND          Override source kind metadata (default: source if .git exists, else release)
+  CCB_PYTHON_BIN           Python 3.10+ executable to use for install-time checks and wrappers
   CCB_USE_MANAGED_VENV     Use install-local Python venv: auto (default), 1, or 0
                            auto = enabled for macOS release installs, disabled for source/dev installs
   CCB_INSTALL_WATCHDOG     Auto-install optional watchdog dependency (default: 1; set 0 to skip)
@@ -250,6 +252,15 @@ require_command() {
 }
 
 PYTHON_BIN="${CCB_PYTHON_BIN:-}"
+PYTHON_CANDIDATE_COMMANDS=(
+  python3
+  python3.14
+  python3.13
+  python3.12
+  python3.11
+  python3.10
+  python
+)
 
 _python_check_310() {
   local cmd="$1"
@@ -261,7 +272,7 @@ pick_python_bin() {
   if [[ -n "${PYTHON_BIN}" ]] && _python_check_310 "${PYTHON_BIN}"; then
     return 0
   fi
-  for cmd in python3 python; do
+  for cmd in "${PYTHON_CANDIDATE_COMMANDS[@]}"; do
     if _python_check_310 "$cmd"; then
       PYTHON_BIN="$cmd"
       return 0
@@ -274,7 +285,7 @@ pick_any_python_bin() {
   if [[ -n "${PYTHON_BIN}" ]] && command -v "${PYTHON_BIN}" >/dev/null 2>&1; then
     return 0
   fi
-  for cmd in python3 python; do
+  for cmd in "${PYTHON_CANDIDATE_COMMANDS[@]}"; do
     if command -v "$cmd" >/dev/null 2>&1; then
       PYTHON_BIN="$cmd"
       return 0
@@ -298,6 +309,14 @@ require_python_version() {
     exit 1
   fi
   echo "OK: Python $version ($PYTHON_BIN)"
+}
+
+selected_python_executable() {
+  if ! pick_python_bin; then
+    echo "ERROR: Missing dependency: python (3.10+ required)" >&2
+    return 1
+  fi
+  "$PYTHON_BIN" -c 'import sys; print(sys.executable)'
 }
 
 python_has_module() {
@@ -1222,15 +1241,14 @@ install_owned_executable() {
   chmod +x "$destination_path" 2>/dev/null || true
 }
 
-write_managed_venv_python_wrapper() {
-  local source_path="$1"
-  local destination_path="$2"
-  local venv_python
+write_python_entrypoint_wrapper() {
+  local python_path="$1"
+  local source_path="$2"
+  local destination_path="$3"
   local absolute_source="$source_path"
   if [[ "$absolute_source" != /* ]]; then
     absolute_source="$(cd "$(dirname "$source_path")" && pwd)/$(basename "$source_path")"
   fi
-  venv_python="$(managed_venv_python)"
   mkdir -p "$(dirname "$destination_path")"
   clear_installed_path "$destination_path"
   cat > "$destination_path" <<EOF
@@ -1238,9 +1256,15 @@ write_managed_venv_python_wrapper() {
 if [[ "\${TERM:-}" == "xterm-ghostty" ]]; then
   export TERM=xterm-256color
 fi
-exec "$venv_python" "$absolute_source" "\$@"
+exec "$python_path" "$absolute_source" "\$@"
 EOF
   chmod +x "$destination_path" 2>/dev/null || true
+}
+
+write_managed_venv_python_wrapper() {
+  local source_path="$1"
+  local destination_path="$2"
+  write_python_entrypoint_wrapper "$(managed_venv_python)" "$source_path" "$destination_path"
 }
 
 install_entrypoint_executable() {
@@ -1258,6 +1282,15 @@ install_entrypoint_executable() {
   fi
   if use_managed_venv && [[ "$absolute_source" == "$INSTALL_PREFIX/"* ]]; then
     write_managed_venv_python_wrapper "$absolute_source" "$destination_path"
+    return 0
+  fi
+
+  if install_uses_live_source; then
+    local python_path
+    if ! python_path="$(selected_python_executable)"; then
+      exit 1
+    fi
+    write_python_entrypoint_wrapper "$python_path" "$absolute_source" "$destination_path"
     return 0
   fi
 
@@ -1281,6 +1314,20 @@ install_bin_links() {
   done
 
   echo "Created executable links in $BIN_DIR"
+}
+
+verify_installed_entrypoints() {
+  if ! "$BIN_DIR/ccb" --print-version >/dev/null 2>&1; then
+    echo "ERROR: installed ccb entrypoint failed runtime smoke check"
+    echo "   Path: $BIN_DIR/ccb"
+    exit 1
+  fi
+  if ! "$BIN_DIR/ask" --help >/dev/null 2>&1; then
+    echo "ERROR: installed ask entrypoint failed runtime smoke check"
+    echo "   Path: $BIN_DIR/ask"
+    exit 1
+  fi
+  echo "OK: Installed entrypoints passed runtime smoke check"
 }
 
 ensure_path_configured() {
@@ -1500,6 +1547,36 @@ install_droid_skills() {
   echo "Updated Factory skills directory: $skills_dst"
 }
 
+droid_command_with_timeout() {
+  local python_runner="$1"
+  local timeout_s="$2"
+  shift 2
+  "$python_runner" - "$timeout_s" "$@" <<'PY' >/dev/null 2>&1
+from __future__ import annotations
+
+import subprocess
+import sys
+
+try:
+    timeout_s = float(sys.argv[1])
+except Exception:
+    timeout_s = 10.0
+cmd = sys.argv[2:]
+try:
+    result = subprocess.run(
+        cmd,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        timeout=max(timeout_s, 0.1),
+    )
+except subprocess.TimeoutExpired:
+    raise SystemExit(124)
+except FileNotFoundError:
+    raise SystemExit(127)
+raise SystemExit(result.returncode)
+PY
+}
+
 install_droid_delegation() {
   if [[ "${CCB_DROID_AUTOINSTALL:-1}" == "0" ]]; then
     return
@@ -1508,11 +1585,11 @@ install_droid_delegation() {
     return
   fi
   local py
-  py="$(command -v python3 2>/dev/null || command -v python 2>/dev/null || true)"
-  if [[ -z "$py" ]]; then
-    echo "WARN: python required for Droid MCP setup; skipping"
+  if ! py="$(selected_python_executable)"; then
+    echo "WARN: Python 3.10+ required for Droid MCP setup; skipping"
     return
   fi
+  local timeout_s="${CCB_DROID_AUTOINSTALL_TIMEOUT_S:-10}"
   local asset_root
   asset_root="$(resolve_install_asset_root)"
   local server="$asset_root/mcp/ccb-delegation/server.py"
@@ -1521,12 +1598,12 @@ install_droid_delegation() {
     return
   fi
   if [[ "${CCB_DROID_AUTOINSTALL_FORCE:-0}" == "1" ]]; then
-    droid mcp remove ccb-delegation >/dev/null 2>&1 || true
+    droid_command_with_timeout "$py" "$timeout_s" droid mcp remove ccb-delegation || true
   fi
-  if droid mcp add ccb-delegation --type stdio "$py" "$server" >/dev/null 2>&1; then
+  if droid_command_with_timeout "$py" "$timeout_s" droid mcp add ccb-delegation --type stdio "$py" "$server"; then
     echo "OK: Droid MCP delegation registered"
   else
-    echo "WARN: Failed to register Droid MCP delegation (already registered or droid config unavailable)"
+    echo "WARN: Failed to register Droid MCP delegation within ${timeout_s}s (already registered, unavailable, or timed out)"
   fi
 }
 
@@ -2204,6 +2281,7 @@ install_all() {
     write_install_metadata
   fi
   install_bin_links
+  verify_installed_entrypoints
   ensure_path_configured
   install_claude_commands
   install_claude_skills

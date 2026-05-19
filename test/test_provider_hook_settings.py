@@ -115,6 +115,7 @@ def test_install_claude_hooks_trusts_workspace_in_managed_home(tmp_path: Path) -
     trust_path = home_root / '.claude.json'
     trust_data = json.loads(trust_path.read_text(encoding='utf-8'))
     assert trust_data[str(workspace.resolve())]['hasTrustDialogAccepted'] is True
+    assert trust_data['projects'][str(workspace.resolve())]['hasTrustDialogAccepted'] is True
     assert not (workspace / '.claude').exists()
 
 

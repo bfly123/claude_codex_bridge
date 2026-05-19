@@ -42,12 +42,12 @@ def test_launch_policy_matrix(
         queue_policy=QueuePolicy.SERIAL_PER_AGENT,
     )
 
-    policy = resolve_agent_launch_policy(spec, cli_restore=False, cli_auto_permission=False)
+    policy = resolve_agent_launch_policy(spec, cli_restore=True, cli_auto_permission=False)
     assert policy.permission_mode is expected_permission
     assert policy.restore_mode is expected_restore
 
 
-def test_cli_flags_override_launch_policy_defaults() -> None:
+def test_cli_new_context_forces_fresh_restore_policy() -> None:
     spec = AgentSpec(
         name='agent1',
         provider='claude',
@@ -55,13 +55,13 @@ def test_cli_flags_override_launch_policy_defaults() -> None:
         workspace_mode=WorkspaceMode.GIT_WORKTREE,
         workspace_root=None,
         runtime_mode='pane',
-        restore_default=RestoreMode.FRESH,
+        restore_default=RestoreMode.PROVIDER,
         permission_default=PermissionMode.MANUAL,
         queue_policy=QueuePolicy.REJECT_WHEN_BUSY,
     )
 
-    policy = resolve_agent_launch_policy(spec, cli_restore=True, cli_auto_permission=True)
+    policy = resolve_agent_launch_policy(spec, cli_restore=False, cli_auto_permission=True)
     assert policy.agent_name == 'agent1'
-    assert policy.restore_mode is EffectiveRestoreMode.AUTO
+    assert policy.restore_mode is EffectiveRestoreMode.FRESH
     assert policy.permission_mode is PermissionMode.AUTO
     assert policy.queue_policy == 'reject-when-busy'

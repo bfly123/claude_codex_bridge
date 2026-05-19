@@ -8,6 +8,8 @@ from .constants import ASK_FLAG_OPTIONS, ASK_JOB_ACTIONS, ASK_OPTIONS_WITH_VALUE
 _REMOVED_ASK_FLAGS = {
     '--sync': 'async submit is already the default',
     '--async': 'omit the flag; async submit is already the default',
+    '--wait': 'submit with `ask <agent> -- <message>`, then wait with `ccb wait-all --timeout <seconds> <job_id>`',
+    '-w': 'submit with `ask <agent> -- <message>`, then wait with `ccb wait-all --timeout <seconds> <job_id>`',
 }
 
 

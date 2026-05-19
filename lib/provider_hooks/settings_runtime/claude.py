@@ -27,6 +27,15 @@ def trust_claude_workspace(*, home_root: Path, workspace_path: Path) -> Path:
         record = {}
     record['hasTrustDialogAccepted'] = True
     data[key] = record
+    projects = data.get('projects')
+    if not isinstance(projects, dict):
+        projects = {}
+    project_record = projects.get(key)
+    if not isinstance(project_record, dict):
+        project_record = {}
+    project_record['hasTrustDialogAccepted'] = True
+    projects[key] = project_record
+    data['projects'] = projects
     save_json(layout.trust_path, data)
     return layout.trust_path
 

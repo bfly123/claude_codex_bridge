@@ -23,14 +23,18 @@ class AgentLaunchPolicy:
 
 
 def resolve_effective_restore_mode(default_mode: RestoreMode, *, cli_restore: bool) -> EffectiveRestoreMode:
-    if cli_restore:
-        return EffectiveRestoreMode.AUTO
+    if not cli_restore:
+        return EffectiveRestoreMode.FRESH
     mapping = {
         RestoreMode.FRESH: EffectiveRestoreMode.FRESH,
         RestoreMode.PROVIDER: EffectiveRestoreMode.PROVIDER,
         RestoreMode.AUTO: EffectiveRestoreMode.AUTO,
     }
     return mapping[default_mode]
+
+
+def should_restore_provider_history(default_mode: RestoreMode, *, cli_restore: bool) -> bool:
+    return resolve_effective_restore_mode(default_mode, cli_restore=cli_restore) is not EffectiveRestoreMode.FRESH
 
 
 def resolve_effective_permission_mode(

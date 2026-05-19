@@ -4,6 +4,7 @@ from pathlib import Path
 import json
 import shlex
 
+from agents.policy import should_restore_provider_history
 from provider_core.caller_env import (
     caller_context_env,
     export_env_clause,
@@ -59,7 +60,11 @@ def build_start_cmd(
     provider_start_parts_fn,
 ) -> str:
     profile = load_profile_fn(runtime_dir)
-    restore_target = resolve_restore_target_fn(spec=spec, runtime_dir=runtime_dir, restore=command.restore)
+    restore_target = resolve_restore_target_fn(
+        spec=spec,
+        runtime_dir=runtime_dir,
+        restore=should_restore_provider_history(spec.restore_default, cli_restore=command.restore),
+    )
     home_overrides = prepare_home_overrides_fn(
         runtime_dir,
         profile,
@@ -82,7 +87,7 @@ def build_start_cmd(
     if settings_path is not None:
         cmd_parts.extend(['--settings', str(settings_path)])
     if command.auto_permission:
-        cmd_parts.extend(['--permission-mode', 'bypassPermissions'])
+        cmd_parts.append('--dangerously-skip-permissions')
     if restore_target.has_history:
         cmd_parts.append('--continue')
     cmd_parts.extend(spec.startup_args)
@@ -107,7 +112,7 @@ def resolve_run_cwd(
         spec=spec,
         runtime_dir=runtime_dir,
         workspace_path=plan.workspace_path,
-        restore=command.restore,
+        restore=should_restore_provider_history(spec.restore_default, cli_restore=command.restore),
     ).run_cwd
 
 

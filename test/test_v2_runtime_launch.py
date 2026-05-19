@@ -864,7 +864,7 @@ def test_ensure_agent_runtime_launches_named_claude_session(monkeypatch, tmp_pat
     assert payload['start_cmd'].endswith(
         f'claude --setting-sources user,project,local --settings '
         f'{shlex.quote(str(ctx.paths.agent_dir("reviewer") / "provider-runtime" / "claude" / "claude-settings.json"))} '
-        '--permission-mode bypassPermissions --continue'
+        '--dangerously-skip-permissions --continue'
     )
     settings_payload = json.loads(
         (ctx.paths.agent_dir('reviewer') / 'provider-runtime' / 'claude' / 'claude-settings.json').read_text(
@@ -1598,6 +1598,33 @@ def test_codex_launcher_build_start_cmd_uses_agent_scoped_resume_session(monkeyp
     assert 'agent2-session-id' not in cmd
 
 
+def test_codex_launcher_build_start_cmd_respects_agent_restore_fresh(monkeypatch, tmp_path: Path) -> None:
+    project_root = tmp_path / 'repo-codex-fresh'
+    runtime_dir = project_root / '.ccb' / 'agents' / 'agent1' / 'provider-runtime' / 'codex'
+    runtime_dir.mkdir(parents=True, exist_ok=True)
+    spec = AgentSpec(
+        name='agent1',
+        provider='codex',
+        target='.',
+        workspace_mode=WorkspaceMode.GIT_WORKTREE,
+        workspace_root=None,
+        runtime_mode=RuntimeMode.PANE_BACKED,
+        restore_default=RestoreMode.FRESH,
+        permission_default=PermissionMode.MANUAL,
+        queue_policy=QueuePolicy.SERIAL_PER_AGENT,
+    )
+    command = ParsedStartCommand(project=None, agent_names=('agent1',), restore=True, auto_permission=False)
+
+    monkeypatch.setattr(
+        'provider_backends.codex.launcher_runtime.command.load_resume_session_id',
+        lambda *args, **kwargs: pytest.fail('fresh restore must not inspect Codex resume sessions'),
+    )
+
+    cmd = _codex_start_cmd(command, spec, runtime_dir, 'sess-fresh')
+
+    assert ' resume ' not in f' {cmd} '
+
+
 def test_codex_launcher_build_start_cmd_reads_resume_cmd_from_agent_scoped_session_file(tmp_path: Path) -> None:
     project_root = tmp_path / 'repo-codex-agent'
     runtime_dir = project_root / '.ccb' / 'agents' / 'codex' / 'provider-runtime' / 'codex'
@@ -1674,10 +1701,50 @@ def test_claude_launcher_build_start_cmd_uses_overlay_and_drops_dead_local_user_
     )
     assert start_cmd.endswith(
         f'claude --setting-sources user,project,local --settings {shlex.quote(str(runtime_dir / "claude-settings.json"))} '
-        '--permission-mode bypassPermissions --continue'
+        '--dangerously-skip-permissions --continue'
     )
     settings_payload = json.loads((runtime_dir / 'claude-settings.json').read_text(encoding='utf-8'))
     assert settings_payload['skipDangerousModePermissionPrompt'] is True
+
+
+def test_claude_launcher_build_start_cmd_respects_agent_restore_fresh(monkeypatch, tmp_path: Path) -> None:
+    runtime_dir = tmp_path / 'runtime-claude-fresh'
+    runtime_dir.mkdir(parents=True, exist_ok=True)
+    spec = AgentSpec(
+        name='reviewer',
+        provider='claude',
+        target='.',
+        workspace_mode=WorkspaceMode.GIT_WORKTREE,
+        workspace_root=None,
+        runtime_mode=RuntimeMode.PANE_BACKED,
+        restore_default=RestoreMode.FRESH,
+        permission_default=PermissionMode.MANUAL,
+        queue_policy=QueuePolicy.SERIAL_PER_AGENT,
+    )
+    command = ParsedStartCommand(project=None, agent_names=('reviewer',), restore=True, auto_permission=True)
+    observed_restore_flags: list[bool] = []
+
+    def fake_restore_target(**kwargs):
+        observed_restore_flags.append(bool(kwargs['restore']))
+        return ProviderRestoreTarget(run_cwd=runtime_dir, has_history=bool(kwargs['restore']))
+
+    monkeypatch.setattr(claude_launcher, '_resolve_claude_restore_target', fake_restore_target)
+    monkeypatch.setattr(
+        'provider_backends.claude.launcher.write_claude_settings_overlay',
+        lambda runtime_dir, profile=None: runtime_dir / 'claude-settings.json',
+    )
+
+    start_cmd = claude_launcher.build_start_cmd(
+        command,
+        spec,
+        runtime_dir,
+        'claude-sess-fresh',
+        prepared_state=_claude_prepared_state(runtime_dir),
+    )
+
+    assert observed_restore_flags == [False]
+    assert '--dangerously-skip-permissions' in start_cmd
+    assert '--continue' not in start_cmd
 
 
 def test_claude_launcher_build_start_cmd_includes_agent_model_shortcut(tmp_path: Path) -> None:
@@ -2413,7 +2480,7 @@ def test_claude_launcher_build_start_cmd_uses_isolated_profile_api_env(monkeypat
     assert f'ANTHROPIC_AUTH_TOKEN={shlex.quote("profile-token")}' in start_cmd
     assert 'https://example.invalid/claude' not in start_cmd
     assert f'--settings {shlex.quote(str(runtime_dir / "claude-settings.json"))}' in start_cmd
-    assert '--permission-mode bypassPermissions' in start_cmd
+    assert '--dangerously-skip-permissions' in start_cmd
     settings_payload = json.loads((runtime_dir / 'claude-settings.json').read_text(encoding='utf-8'))
     assert settings_payload['skipDangerousModePermissionPrompt'] is True
 

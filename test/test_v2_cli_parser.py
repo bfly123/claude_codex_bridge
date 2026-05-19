@@ -202,6 +202,8 @@ def test_parse_ask_with_callback_flag(parser: CliParser) -> None:
     [
         (['ask', '--sync', 'agent1', 'ship', 'it'], '--sync is no longer supported'),
         (['ask', '--async', 'agent1', 'ship', 'it'], '--async is no longer supported'),
+        (['ask', '--wait', 'agent1', 'ship', 'it'], 'wait-all'),
+        (['ask', '-w', 'agent1', 'ship', 'it'], 'wait-all'),
     ],
 )
 def test_parse_ask_rejects_removed_alias_flags(parser: CliParser, argv: list[str], message: str) -> None:

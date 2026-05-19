@@ -5,6 +5,7 @@ import shlex
 from pathlib import Path
 from typing import Callable
 
+from agents.policy import should_restore_provider_history
 from provider_core.caller_env import caller_context_env, provider_user_session_env
 from provider_backends.codex.runtime_artifacts import codex_runtime_artifact_layout
 from provider_backends.codex.session_authority import (
@@ -96,7 +97,7 @@ def _codex_args(command, spec, runtime_dir: Path, *, profile, provider_start_par
             ]
         )
     codex_args.extend(spec.startup_args)
-    if command.restore:
+    if should_restore_provider_history(spec.restore_default, cli_restore=command.restore):
         session_id = load_resume_session_id_fn(
             spec,
             runtime_dir,
