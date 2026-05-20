@@ -1,6 +1,10 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
+
+
+_DEFAULT_CCB_TMUX_CONFIG = "/dev/null"
 
 
 def tmux_base(
@@ -8,9 +12,16 @@ def tmux_base(
     *,
     socket_path: str | None = None,
 ) -> list[str]:
-    cmd = ["tmux"]
+    cmd = ["tmux", *config_base_args()]
     cmd.extend(socket_base_args(socket_name=socket_name, socket_path=socket_path))
     return cmd
+
+
+def config_base_args() -> list[str]:
+    config_path = str(os.environ.get("CCB_TMUX_CONFIG") or _DEFAULT_CCB_TMUX_CONFIG).strip()
+    if not config_path:
+        return []
+    return ["-f", str(Path(config_path).expanduser())]
 
 
 def socket_base_args(*, socket_name: str | None, socket_path: str | None) -> list[str]:

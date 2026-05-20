@@ -864,7 +864,7 @@ def test_ensure_agent_runtime_launches_named_claude_session(monkeypatch, tmp_pat
     assert payload['start_cmd'].endswith(
         f'claude --setting-sources user,project,local --settings '
         f'{shlex.quote(str(ctx.paths.agent_dir("reviewer") / "provider-runtime" / "claude" / "claude-settings.json"))} '
-        '--dangerously-skip-permissions --continue'
+        '--permission-mode bypassPermissions --continue'
     )
     settings_payload = json.loads(
         (ctx.paths.agent_dir('reviewer') / 'provider-runtime' / 'claude' / 'claude-settings.json').read_text(
@@ -1701,7 +1701,7 @@ def test_claude_launcher_build_start_cmd_uses_overlay_and_drops_dead_local_user_
     )
     assert start_cmd.endswith(
         f'claude --setting-sources user,project,local --settings {shlex.quote(str(runtime_dir / "claude-settings.json"))} '
-        '--dangerously-skip-permissions --continue'
+        '--permission-mode bypassPermissions --continue'
     )
     settings_payload = json.loads((runtime_dir / 'claude-settings.json').read_text(encoding='utf-8'))
     assert settings_payload['skipDangerousModePermissionPrompt'] is True
@@ -1743,7 +1743,7 @@ def test_claude_launcher_build_start_cmd_respects_agent_restore_fresh(monkeypatc
     )
 
     assert observed_restore_flags == [False]
-    assert '--dangerously-skip-permissions' in start_cmd
+    assert '--permission-mode bypassPermissions' in start_cmd
     assert '--continue' not in start_cmd
 
 
@@ -2481,7 +2481,7 @@ def test_claude_launcher_build_start_cmd_uses_isolated_profile_api_env(monkeypat
     assert f'ANTHROPIC_AUTH_TOKEN={shlex.quote("profile-token")}' in start_cmd
     assert 'https://example.invalid/claude' not in start_cmd
     assert f'--settings {shlex.quote(str(runtime_dir / "claude-settings.json"))}' in start_cmd
-    assert '--dangerously-skip-permissions' in start_cmd
+    assert '--permission-mode bypassPermissions' in start_cmd
     settings_payload = json.loads((runtime_dir / 'claude-settings.json').read_text(encoding='utf-8'))
     assert settings_payload['skipDangerousModePermissionPrompt'] is True
 

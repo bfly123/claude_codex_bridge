@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+## v6.2.6 (2026-05-20)
+
+### Tmux Isolation And Startup Hardening Release
+
+- **CCB Tmux Uses Isolated Config By Default**: managed tmux commands now run with `tmux -f /dev/null ...`, with `CCB_TMUX_CONFIG` available for explicit managed overrides, so user `~/.tmux.conf` plugins and hooks cannot alter CCB pane topology.
+- **Source Install Startup Path Hardened**: source/dev installs now use a Python wrapper, honor `CCB_PYTHON_BIN`, run post-install entrypoint smoke checks, and keep Droid MCP registration bounded by a timeout.
+- **Provider Startup Reliability Improved**: restore-fresh behavior takes effect correctly and Claude managed homes write trust state while preserving the accepted `--permission-mode bypassPermissions` auto-permission path.
+- **Ask Removed-Flag Surface Kept Simple**: removed wait-alias migration guidance remains absent from the current ask parser and tests.
+
 ## v6.2.5 (2026-05-19)
 
 ### Claude Managed Memory De-Duplication Hotfix

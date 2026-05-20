@@ -99,6 +99,8 @@ Out of scope:
 - The directory that owns `.ccb/` is the only authority root for that project.
 - Project lifecycle state must live under that project's `.ccb/` only.
 - Startup, supervision, and shutdown must be reasoned per project anchor, never globally.
+- CCB-managed tmux servers must be started with an isolated tmux config so user-level
+  tmux plugins, hooks, and global options cannot alter project pane topology.
 
 ### 5.2 One Authoritative Backend
 

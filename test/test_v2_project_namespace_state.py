@@ -307,7 +307,7 @@ def test_prepare_server_preserves_tmux_failure_detail_for_diagnostics(tmp_path: 
             self._socket_path = str(socket_path)
 
         def _tmux_base(self) -> list[str]:
-            return ['tmux', '-S', self._socket_path]
+            return ['tmux', '-f', '/dev/null', '-S', self._socket_path]
 
         def _tmux_run(
             self,
@@ -337,7 +337,7 @@ def test_prepare_server_preserves_tmux_failure_detail_for_diagnostics(tmp_path: 
     assert 'failed to prepare tmux server' in text
     assert f'tmux_socket_path={socket_path}' in text
     assert 'tmux_socket_path_bytes=' in text
-    assert "tmux_command='tmux -S" in text
+    assert "tmux_command='tmux -f /dev/null -S" in text
     assert 'start-server' in text
     assert 'No such file or directory' in text
 

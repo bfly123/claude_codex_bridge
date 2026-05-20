@@ -13,6 +13,11 @@ from cli.services.start_foreground import ForegroundAttachError, attach_started_
 from project.resolver import bootstrap_project
 
 
+@pytest.fixture(autouse=True)
+def _clear_tmux_config_env(monkeypatch) -> None:
+    monkeypatch.delenv('CCB_TMUX_CONFIG', raising=False)
+
+
 def _context(project_root: Path):
     command = ParsedStartCommand(project=None, agent_names=(), restore=True, auto_permission=True)
     return CliContextBuilder().build(command, cwd=project_root, bootstrap_if_missing=False)
@@ -26,6 +31,10 @@ def _assert_call_subsequence(actual: list[list[str]], expected: list[list[str]])
             if index == len(expected):
                 return
     raise AssertionError(f'expected call subsequence {expected!r}; actual={actual!r}')
+
+
+def _tmux_cmd(context, *args: str) -> list[str]:
+    return ['tmux', '-f', '/dev/null', '-S', str(context.paths.ccbd_tmux_socket_path), *args]
 
 
 class _FakeAttachProcess:
@@ -74,7 +83,7 @@ def test_start_foreground_attaches_to_namespace_tmux_session(tmp_path: Path, mon
     def _run(args, **kwargs):
         call = list(args)
         run_calls.append(call)
-        if call[3:4] == ['list-clients']:
+        if 'list-clients' in call:
             if call[-1] == '#{client_pid}\t#{client_tty}':
                 return subprocess.CompletedProcess(args=args, returncode=0, stdout='4242\t/dev/pts/55\n')
             return subprocess.CompletedProcess(args=args, returncode=0, stdout='4242\n')
@@ -98,40 +107,15 @@ def test_start_foreground_attaches_to_namespace_tmux_session(tmp_path: Path, mon
     assert client_timeouts == [start_foreground_service.FOREGROUND_ATTACH_RPC_TIMEOUT_S]
     assert 'CONTROL_PLANE_RPC_TIMEOUT_S' not in start_foreground_service.__dict__
     _assert_call_subsequence(run_calls, [
-        ['tmux', '-S', str(context.paths.ccbd_tmux_socket_path), 'has-session', '-t', context.paths.ccbd_tmux_session_name],
-        [
-            'tmux',
-            '-S',
-            str(context.paths.ccbd_tmux_socket_path),
-            'select-window',
-            '-t',
-            f'{context.paths.ccbd_tmux_session_name}:{context.paths.ccbd_tmux_workspace_window_name}',
-        ],
-        [
-            'tmux',
-            '-S',
-            str(context.paths.ccbd_tmux_socket_path),
-            'list-clients',
-            '-t',
-            context.paths.ccbd_tmux_session_name,
-            '-F',
-            '#{client_pid}',
-        ],
-        [
-            'tmux',
-            '-S',
-            str(context.paths.ccbd_tmux_socket_path),
-            'list-clients',
-            '-t',
-            context.paths.ccbd_tmux_session_name,
-            '-F',
-            '#{client_pid}\t#{client_tty}',
-        ],
-        ['tmux', '-S', str(context.paths.ccbd_tmux_socket_path), 'refresh-client', '-t', '/dev/pts/55'],
+        _tmux_cmd(context, 'has-session', '-t', context.paths.ccbd_tmux_session_name),
+        _tmux_cmd(context, 'select-window', '-t', f'{context.paths.ccbd_tmux_session_name}:{context.paths.ccbd_tmux_workspace_window_name}'),
+        _tmux_cmd(context, 'list-clients', '-t', context.paths.ccbd_tmux_session_name, '-F', '#{client_pid}'),
+        _tmux_cmd(context, 'list-clients', '-t', context.paths.ccbd_tmux_session_name, '-F', '#{client_pid}\t#{client_tty}'),
+        _tmux_cmd(context, 'refresh-client', '-t', '/dev/pts/55'),
     ])
-    assert ['tmux', '-S', str(context.paths.ccbd_tmux_socket_path), 'attach-session', '-t', context.paths.ccbd_tmux_session_name] in attach_calls
+    assert _tmux_cmd(context, 'attach-session', '-t', context.paths.ccbd_tmux_session_name) in attach_calls
     assert attach_calls.count(
-        ['tmux', '-S', str(context.paths.ccbd_tmux_socket_path), 'attach-session', '-t', context.paths.ccbd_tmux_session_name]
+        _tmux_cmd(context, 'attach-session', '-t', context.paths.ccbd_tmux_session_name)
     ) == 1
 
 
@@ -167,11 +151,11 @@ def test_start_foreground_waits_for_workspace_window_visibility_before_attach(tm
         nonlocal select_attempts
         call = list(args)
         run_calls.append(call)
-        if call[3:4] == ['list-clients']:
+        if 'list-clients' in call:
             if call[-1] == '#{client_pid}\t#{client_tty}':
                 return subprocess.CompletedProcess(args=args, returncode=0, stdout='4343\t/dev/pts/88\n')
             return subprocess.CompletedProcess(args=args, returncode=0, stdout='4343\n')
-        if call[3:4] == ['select-window']:
+        if 'select-window' in call:
             select_attempts += 1
             return subprocess.CompletedProcess(args=args, returncode=0 if select_attempts >= 2 else 1)
         return subprocess.CompletedProcess(args=args, returncode=0)
@@ -191,49 +175,17 @@ def test_start_foreground_waits_for_workspace_window_visibility_before_attach(tm
 
     assert summary.project_id == context.project.project_id
     _assert_call_subsequence(run_calls, [
-        ['tmux', '-S', str(context.paths.ccbd_tmux_socket_path), 'has-session', '-t', context.paths.ccbd_tmux_session_name],
-        [
-            'tmux',
-            '-S',
-            str(context.paths.ccbd_tmux_socket_path),
-            'select-window',
-            '-t',
-            f'{context.paths.ccbd_tmux_session_name}:{context.paths.ccbd_tmux_workspace_window_name}',
-        ],
-        ['tmux', '-S', str(context.paths.ccbd_tmux_socket_path), 'has-session', '-t', context.paths.ccbd_tmux_session_name],
-        [
-            'tmux',
-            '-S',
-            str(context.paths.ccbd_tmux_socket_path),
-            'select-window',
-            '-t',
-            f'{context.paths.ccbd_tmux_session_name}:{context.paths.ccbd_tmux_workspace_window_name}',
-        ],
-        [
-            'tmux',
-            '-S',
-            str(context.paths.ccbd_tmux_socket_path),
-            'list-clients',
-            '-t',
-            context.paths.ccbd_tmux_session_name,
-            '-F',
-            '#{client_pid}',
-        ],
-        [
-            'tmux',
-            '-S',
-            str(context.paths.ccbd_tmux_socket_path),
-            'list-clients',
-            '-t',
-            context.paths.ccbd_tmux_session_name,
-            '-F',
-            '#{client_pid}\t#{client_tty}',
-        ],
-        ['tmux', '-S', str(context.paths.ccbd_tmux_socket_path), 'refresh-client', '-t', '/dev/pts/88'],
+        _tmux_cmd(context, 'has-session', '-t', context.paths.ccbd_tmux_session_name),
+        _tmux_cmd(context, 'select-window', '-t', f'{context.paths.ccbd_tmux_session_name}:{context.paths.ccbd_tmux_workspace_window_name}'),
+        _tmux_cmd(context, 'has-session', '-t', context.paths.ccbd_tmux_session_name),
+        _tmux_cmd(context, 'select-window', '-t', f'{context.paths.ccbd_tmux_session_name}:{context.paths.ccbd_tmux_workspace_window_name}'),
+        _tmux_cmd(context, 'list-clients', '-t', context.paths.ccbd_tmux_session_name, '-F', '#{client_pid}'),
+        _tmux_cmd(context, 'list-clients', '-t', context.paths.ccbd_tmux_session_name, '-F', '#{client_pid}\t#{client_tty}'),
+        _tmux_cmd(context, 'refresh-client', '-t', '/dev/pts/88'),
     ])
-    assert ['tmux', '-S', str(context.paths.ccbd_tmux_socket_path), 'attach-session', '-t', context.paths.ccbd_tmux_session_name] in attach_calls
+    assert _tmux_cmd(context, 'attach-session', '-t', context.paths.ccbd_tmux_session_name) in attach_calls
     assert attach_calls.count(
-        ['tmux', '-S', str(context.paths.ccbd_tmux_socket_path), 'attach-session', '-t', context.paths.ccbd_tmux_session_name]
+        _tmux_cmd(context, 'attach-session', '-t', context.paths.ccbd_tmux_session_name)
     ) == 1
 
 
@@ -277,7 +229,7 @@ def test_start_foreground_retries_transient_ccbd_ping_timeouts_before_attach(
     def _run(args, **kwargs):
         call = list(args)
         run_calls.append(call)
-        if call[3:4] == ['list-clients']:
+        if 'list-clients' in call:
             if call[-1] == '#{client_pid}\t#{client_tty}':
                 return subprocess.CompletedProcess(args=args, returncode=0, stdout='4444\t/dev/pts/44\n')
             return subprocess.CompletedProcess(args=args, returncode=0, stdout='4444\n')
@@ -294,7 +246,7 @@ def test_start_foreground_retries_transient_ccbd_ping_timeouts_before_attach(
     assert summary.tmux_session_name == context.paths.ccbd_tmux_session_name
     assert len(client_holder) == 1
     assert client_holder[0].calls == 3
-    assert any(call[3:4] == ['refresh-client'] for call in run_calls)
+    assert any('refresh-client' in call for call in run_calls)
 
 
 def test_start_foreground_ping_timeout_error_reports_foreground_attach_context(
@@ -421,29 +373,13 @@ def test_start_foreground_reports_clean_error_when_session_exits_before_attach(t
         attach_started_project_namespace(context)
 
     assert run_calls == [
-        ['tmux', '-S', str(context.paths.ccbd_tmux_socket_path), 'has-session', '-t', context.paths.ccbd_tmux_session_name],
-        [
-            'tmux',
-            '-S',
-            str(context.paths.ccbd_tmux_socket_path),
-            'select-window',
-            '-t',
-            f'{context.paths.ccbd_tmux_session_name}:{context.paths.ccbd_tmux_workspace_window_name}',
-        ],
-        [
-            'tmux',
-            '-S',
-            str(context.paths.ccbd_tmux_socket_path),
-            'list-clients',
-            '-t',
-            context.paths.ccbd_tmux_session_name,
-            '-F',
-            '#{client_pid}',
-        ],
-        ['tmux', '-S', str(context.paths.ccbd_tmux_socket_path), 'has-session', '-t', context.paths.ccbd_tmux_session_name],
+        _tmux_cmd(context, 'has-session', '-t', context.paths.ccbd_tmux_session_name),
+        _tmux_cmd(context, 'select-window', '-t', f'{context.paths.ccbd_tmux_session_name}:{context.paths.ccbd_tmux_workspace_window_name}'),
+        _tmux_cmd(context, 'list-clients', '-t', context.paths.ccbd_tmux_session_name, '-F', '#{client_pid}'),
+        _tmux_cmd(context, 'has-session', '-t', context.paths.ccbd_tmux_session_name),
     ]
     assert attach_calls == [
-        ['tmux', '-S', str(context.paths.ccbd_tmux_socket_path), 'attach-session', '-t', context.paths.ccbd_tmux_session_name]
+        _tmux_cmd(context, 'attach-session', '-t', context.paths.ccbd_tmux_session_name)
     ]
 
 
@@ -475,7 +411,7 @@ def test_start_foreground_treats_post_attach_session_exit_as_success(tmp_path: P
     def _run(args, **kwargs):
         call = list(args)
         run_calls.append(call)
-        if call[3:4] == ['list-clients']:
+        if 'list-clients' in call:
             if call[-1] == '#{client_pid}\t#{client_tty}':
                 return subprocess.CompletedProcess(args=args, returncode=0, stdout='6161\t/dev/pts/61\n')
             attach_process.returncode = 1
@@ -497,39 +433,14 @@ def test_start_foreground_treats_post_attach_session_exit_as_success(tmp_path: P
     assert summary.project_id == context.project.project_id
     assert attach_process.wait_calls == 1
     assert run_calls == [
-        ['tmux', '-S', str(context.paths.ccbd_tmux_socket_path), 'has-session', '-t', context.paths.ccbd_tmux_session_name],
-        [
-            'tmux',
-            '-S',
-            str(context.paths.ccbd_tmux_socket_path),
-            'select-window',
-            '-t',
-            f'{context.paths.ccbd_tmux_session_name}:{context.paths.ccbd_tmux_workspace_window_name}',
-        ],
-        [
-            'tmux',
-            '-S',
-            str(context.paths.ccbd_tmux_socket_path),
-            'list-clients',
-            '-t',
-            context.paths.ccbd_tmux_session_name,
-            '-F',
-            '#{client_pid}',
-        ],
-        [
-            'tmux',
-            '-S',
-            str(context.paths.ccbd_tmux_socket_path),
-            'list-clients',
-            '-t',
-            context.paths.ccbd_tmux_session_name,
-            '-F',
-            '#{client_pid}\t#{client_tty}',
-        ],
-        ['tmux', '-S', str(context.paths.ccbd_tmux_socket_path), 'refresh-client', '-t', '/dev/pts/61'],
+        _tmux_cmd(context, 'has-session', '-t', context.paths.ccbd_tmux_session_name),
+        _tmux_cmd(context, 'select-window', '-t', f'{context.paths.ccbd_tmux_session_name}:{context.paths.ccbd_tmux_workspace_window_name}'),
+        _tmux_cmd(context, 'list-clients', '-t', context.paths.ccbd_tmux_session_name, '-F', '#{client_pid}'),
+        _tmux_cmd(context, 'list-clients', '-t', context.paths.ccbd_tmux_session_name, '-F', '#{client_pid}\t#{client_tty}'),
+        _tmux_cmd(context, 'refresh-client', '-t', '/dev/pts/61'),
     ]
     assert attach_calls == [
-        ['tmux', '-S', str(context.paths.ccbd_tmux_socket_path), 'attach-session', '-t', context.paths.ccbd_tmux_session_name]
+        _tmux_cmd(context, 'attach-session', '-t', context.paths.ccbd_tmux_session_name)
     ]
 
 
@@ -592,7 +503,7 @@ def test_start_foreground_skips_refresh_when_client_tty_is_unavailable(tmp_path:
     def _run(args, **kwargs):
         call = list(args)
         run_calls.append(call)
-        if call[3:4] == ['list-clients']:
+        if 'list-clients' in call:
             if call[-1] == '#{client_pid}\t#{client_tty}':
                 return subprocess.CompletedProcess(args=args, returncode=0, stdout='7171\t\n')
             return subprocess.CompletedProcess(args=args, returncode=0, stdout='7171\n')
@@ -605,4 +516,4 @@ def test_start_foreground_skips_refresh_when_client_tty_is_unavailable(tmp_path:
 
     attach_started_project_namespace(context)
 
-    assert not any(call[3:4] == ['refresh-client'] for call in run_calls)
+    assert not any('refresh-client' in call for call in run_calls)

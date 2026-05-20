@@ -16,9 +16,8 @@
 4. 普通用户不再因系统 `/usr/bin/python3` 是 Python 3.9 而启动失败。
 5. 安装后能明确验证真实入口可运行。
 6. Droid MCP 注册不能阻塞 Claude/Codex 主安装流程。
-7. 旧 `ask --wait` 用户能看到明确迁移提示。
-8. doctor 能逐步暴露 provider CLI 路径漂移问题。
-9. Claude Code 首次确认应被诊断为 provider blocked，而不是误判成 CCB 路由失败。
+7. doctor 能逐步暴露 provider CLI 路径漂移问题。
+8. Claude Code 首次确认应被诊断为 provider blocked，而不是误判成 CCB 路由失败。
 
 ## 3. 非目标
 
@@ -291,50 +290,9 @@ droid add 失败 -> 输出 WARN，安装继续
 droid add 卡住 -> 超时 WARN，安装继续
 ```
 
-## 7. PR 4：ask --wait 迁移提示
+## 7. PR 4：保留 ask submit-only 表面
 
-### 7.1 问题
-
-旧用户会执行：
-
-```bash
-ask --wait --timeout 300 backend -- 'message'
-```
-
-当前只输出：
-
-```text
-unknown ask option: --wait
-```
-
-这个提示不说明新版替代方式。
-
-### 7.2 推荐实现
-
-在 `lib/cli/parser_runtime/ask.py` 中扩展：
-
-```python
-_REMOVED_ASK_FLAGS = {
-    '--sync': 'async submit is already the default',
-    '--async': 'omit the flag; async submit is already the default',
-    '--wait': 'submit with `ask <agent> -- <message>`, then wait with `ccb wait-all --timeout <seconds> <job_id>`',
-    '-w': 'submit with `ask <agent> -- <message>`, then wait with `ccb wait-all --timeout <seconds> <job_id>`',
-}
-```
-
-### 7.3 测试
-
-新增 parser 测试：
-
-```text
-parser.parse(['ask', '--wait', 'backend', '--', 'hi'])
-```
-
-期望抛出 `CliUsageError`，错误中包含：
-
-```text
-wait-all
-```
+旧 `ask --wait` 同步行为不恢复，也不在 `ask` 错误提示中重新引入 wait/timeout 迁移文案。`ask` 的用户表面保持 submit-only；需要等待聚合结果时使用独立的 `ccb wait-*` 命令。
 
 ## 8. PR 5：doctor 路径诊断增强
 
@@ -433,10 +391,9 @@ agent_blocker: name=lead provider=claude kind=interactive_prompt reason=trust_or
 建议顺序：
 
 1. `fix/source-install-python-wrapper`
-2. `fix/ask-wait-migration-message`
-3. `fix/droid-install-timeout`
-4. `feat/doctor-runtime-path-diagnostics`
-5. `feat/claude-prompt-blocker-diagnostics`
+2. `fix/droid-install-timeout`
+3. `feat/doctor-runtime-path-diagnostics`
+4. `feat/claude-prompt-blocker-diagnostics`
 
 不要把 1 到 5 全部塞进一个 PR。
 

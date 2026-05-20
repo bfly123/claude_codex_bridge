@@ -7,7 +7,7 @@
   <img src="https://img.shields.io/badge/模型皆可控-CF1322?style=for-the-badge" alt="模型皆可控">
 </p>
 
-[![Version](https://img.shields.io/badge/version-6.2.5-orange.svg)]()
+[![Version](https://img.shields.io/badge/version-6.2.6-orange.svg)]()
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey.svg)]()
 
 [English](README.md) | **中文**
@@ -74,9 +74,9 @@
 <details>
 <summary><b>最新版本亮点</b></summary>
 
-- **Claude managed memory 不再重复项目规则**：managed `.claude/CLAUDE.md` 不再复制项目级 `CLAUDE.md`；Claude 仍会从工作目录原生读取它。
-- **Managed Claude memory 保留正确继承源**：真实 `~/.claude/CLAUDE.md`、`.ccb/ccb_memory.md` 和每个 agent 的 `.ccb/agents/<agent>/memory.md` 仍会进入 managed bundle。
-- **Memory source 加入可控开关**：`load_memory_sources(..., include_provider_native_project=False)` 可跳过 provider-native project memory，默认行为仍保持包含。
+- **CCB tmux 默认隔离用户配置**：managed tmux 命令现在使用 `tmux -f /dev/null ...`，避免用户 `~/.tmux.conf` 插件、hook 或 sidebar 改写 CCB pane layout。
+- **源码安装更稳定**：source/dev 安装使用 Python wrapper，支持 `CCB_PYTHON_BIN`，安装后执行真实 entrypoint smoke test，并给 Droid MCP 注册加超时。
+- **Provider 启动保持兼容和可靠**：restore-fresh 正确生效，Claude trust 写入 managed home，Claude auto-permission 继续使用 `--permission-mode bypassPermissions`。
 
 完整历史见 [新版本记录](#新版本记录)。
 
@@ -329,6 +329,16 @@ ccb reinstall
 历史说明：下面较旧的发布记录里仍可能出现 `askd`、旧 flag 或已移除命令。这些内容仅作为 changelog 历史保留，不代表当前 CLI 入口。
 
 <details open>
+<summary><b>v6.2.6</b> - Tmux Isolation And Startup Hardening Release</summary>
+
+- managed tmux 命令默认使用 `tmux -f /dev/null ...`，避免用户 tmux 配置、插件、hook 或 sidebar 改变 CCB-managed layout。
+- source/dev 安装路径增强：Python wrapper 入口、`CCB_PYTHON_BIN`、安装后 `ccb` 和 `ask` smoke test、Droid MCP 注册超时。
+- restore-fresh 和 Claude trust 写入更可靠，同时 Claude auto-permission 保持 `--permission-mode bypassPermissions`。
+- 当前 ask parser 继续不包含已移除的 wait-alias 特殊迁移提示。
+
+</details>
+
+<details>
 <summary><b>v6.2.5</b> - Claude Managed Memory De-Duplication Hotfix</summary>
 
 - 不再把项目级 `CLAUDE.md` 复制进 managed `.claude/CLAUDE.md`，让 Claude 只从工作目录读取一次。

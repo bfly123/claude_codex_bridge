@@ -22,7 +22,7 @@
 
 3. [03-remediation-design.md](./03-remediation-design.md)
 
-   给出工程修复设计，包括 source/dev Python wrapper、安装后真实入口自检、Droid 注册降级、`ask --wait` 迁移提示、doctor 诊断增强、Claude prompt blocked 识别。
+   给出工程修复设计，包括 source/dev Python wrapper、安装后真实入口自检、Droid 注册降级、doctor 诊断增强、Claude prompt blocked 识别。
 
 4. [04-validation-runbook.md](./04-validation-runbook.md)
 
@@ -69,10 +69,9 @@ CCB_USE_MANAGED_VENV=1 \
 
 1. source/dev 安装的 Python 入口闭环。
 2. 安装后真实 `ccb` 入口 smoke test。
-3. `ask --wait` 迁移提示。
-4. Droid MCP 注册超时和非核心化。
-5. `ccb doctor` 增强 provider 路径诊断。
-6. Claude Code 首次确认 blocked 状态识别。
+3. Droid MCP 注册超时和非核心化。
+4. `ccb doctor` 增强 provider 路径诊断。
+5. Claude Code 首次确认 blocked 状态识别。
 
 这些修复建议拆成多个 PR，而不是一个大 PR。
 

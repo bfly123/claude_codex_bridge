@@ -8,6 +8,7 @@ import time
 
 from cli.context import CliContext
 from ccbd.socket_client import CcbdClient, CcbdClientError
+from terminal_runtime.tmux import tmux_base
 from .daemon_runtime.policy import (
     FOREGROUND_ATTACH_RPC_TIMEOUT_S,
     FOREGROUND_ATTACH_TARGET_READY_TIMEOUT_S,
@@ -45,7 +46,7 @@ def attach_started_project_namespace(context: CliContext) -> ForegroundAttachSum
         tmux_session_name=tmux_session_name,
     )
     attach = subprocess.Popen(
-        ['tmux', '-S', tmux_socket_path, 'attach-session', '-t', tmux_session_name],
+        _tmux_cmd(tmux_socket_path, 'attach-session', '-t', tmux_session_name),
         env=env,
     )
     attached = _wait_for_attach_established(
@@ -215,7 +216,7 @@ def _tmux_list_client_pids(
     env: dict[str, str],
 ) -> tuple[int, ...]:
     probe = subprocess.run(
-        ['tmux', '-S', tmux_socket_path, 'list-clients', '-t', tmux_session_name, '-F', '#{client_pid}'],
+        _tmux_cmd(tmux_socket_path, 'list-clients', '-t', tmux_session_name, '-F', '#{client_pid}'),
         check=False,
         env=env,
         stdout=subprocess.PIPE,
@@ -244,16 +245,7 @@ def _tmux_client_tty(
     env: dict[str, str],
 ) -> str | None:
     probe = subprocess.run(
-        [
-            'tmux',
-            '-S',
-            tmux_socket_path,
-            'list-clients',
-            '-t',
-            tmux_session_name,
-            '-F',
-            '#{client_pid}\t#{client_tty}',
-        ],
+        _tmux_cmd(tmux_socket_path, 'list-clients', '-t', tmux_session_name, '-F', '#{client_pid}\t#{client_tty}'),
         check=False,
         env=env,
         stdout=subprocess.PIPE,
@@ -292,7 +284,7 @@ def _best_effort_refresh_attached_client(
         return
     try:
         subprocess.run(
-            ['tmux', '-S', tmux_socket_path, 'refresh-client', '-t', client_tty],
+            _tmux_cmd(tmux_socket_path, 'refresh-client', '-t', client_tty),
             check=False,
             env=env,
             stdout=subprocess.DEVNULL,
@@ -323,9 +315,13 @@ def _attach_env() -> dict[str, str]:
     return env
 
 
+def _tmux_cmd(tmux_socket_path: str, *args: str) -> list[str]:
+    return [*tmux_base(socket_path=tmux_socket_path), *args]
+
+
 def _tmux_has_session(tmux_socket_path: str, tmux_session_name: str, *, env: dict[str, str]) -> bool:
     probe = subprocess.run(
-        ['tmux', '-S', tmux_socket_path, 'has-session', '-t', tmux_session_name],
+        _tmux_cmd(tmux_socket_path, 'has-session', '-t', tmux_session_name),
         check=False,
         env=env,
         stdout=subprocess.DEVNULL,
@@ -336,7 +332,7 @@ def _tmux_has_session(tmux_socket_path: str, tmux_session_name: str, *, env: dic
 
 def _tmux_select_window(tmux_socket_path: str, target: str, *, env: dict[str, str]) -> bool:
     probe = subprocess.run(
-        ['tmux', '-S', tmux_socket_path, 'select-window', '-t', target],
+        _tmux_cmd(tmux_socket_path, 'select-window', '-t', target),
         check=False,
         env=env,
         stdout=subprocess.DEVNULL,

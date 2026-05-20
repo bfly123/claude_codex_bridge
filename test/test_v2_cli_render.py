@@ -565,7 +565,7 @@ def test_render_ps_and_doctor_keep_expected_line_shapes() -> None:
             'tmux_effective_socket_path': '/home/demo/.local/state/ccb/projects/proj-1/ccbd/tmux.sock',
             'tmux_preferred_socket_path_bytes': 58,
             'tmux_effective_socket_path_bytes': 58,
-            'tmux_start_server_command': 'tmux -S /home/demo/.local/state/ccb/projects/proj-1/ccbd/tmux.sock start-server',
+            'tmux_start_server_command': 'tmux -f /dev/null -S /home/demo/.local/state/ccb/projects/proj-1/ccbd/tmux.sock start-server',
             'tmux_socket_root_kind': 'runtime',
             'tmux_socket_fallback_reason': None,
             'tmux_socket_filesystem_hint': None,
@@ -692,7 +692,7 @@ def test_render_ps_and_doctor_keep_expected_line_shapes() -> None:
     assert 'ccbd_pending_maintenance_ticks: 2.0' in doctor_lines
     assert 'ccbd_tmux_effective_socket_path: /home/demo/.local/state/ccb/projects/proj-1/ccbd/tmux.sock' in doctor_lines
     assert 'ccbd_tmux_effective_socket_path_bytes: 58' in doctor_lines
-    assert 'ccbd_tmux_start_server_command: tmux -S /home/demo/.local/state/ccb/projects/proj-1/ccbd/tmux.sock start-server' in doctor_lines
+    assert 'ccbd_tmux_start_server_command: tmux -f /dev/null -S /home/demo/.local/state/ccb/projects/proj-1/ccbd/tmux.sock start-server' in doctor_lines
     assert 'ccbd_namespace_tmux_session_name: ccb-repo' in doctor_lines
     assert 'agent: name=codex health=healthy provider=codex completion=protocol_turn' in doctor_lines
     assert (

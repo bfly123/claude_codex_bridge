@@ -544,31 +544,9 @@ provider 正在确认
 模型正在处理
 ```
 
-### 5.8 对新版 ask 语义提供兼容提示
+### 5.8 保持 ask 表面简洁
 
-当用户执行：
-
-```bash
-ask --wait --timeout 300 backend -- 'message'
-```
-
-当前错误为：
-
-```text
-unknown ask option: --wait
-```
-
-建议改为更明确的迁移提示：
-
-```text
---wait has been removed.
-Use:
-  job=$(ask backend -- 'message' | sed -n 's/^accepted job=\([^ ]*\).*/\1/p')
-  ccb wait-all --timeout 300 "$job"
-  ask get "$job"
-```
-
-这可以降低版本升级后的误判。
+旧 `ask --wait` 同步行为不恢复，也不在 `ask` 错误提示中重新引入 wait/timeout 迁移文案。当前普通未知参数错误符合 submit-only 的 ask 表面约束；需要等待聚合结果时使用独立的 `ccb wait-*` 命令。
 
 ## 6. 最小代码修改建议
 
@@ -738,7 +716,7 @@ ask CLI 新版移除了旧 --wait 参数。
 保留源码仓库干净跟随 origin/main。
 跳过非核心 Droid MCP 自动注册。
 确认 Claude Code 首次 trust/API key prompt。
-使用新版 ask + ccb wait-all 测试方式。
+使用新版 submit-only ask，并在需要时用独立 wait 命令测试。
 ```
 
 对上游项目，推荐的永久修复是：

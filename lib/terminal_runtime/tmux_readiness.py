@@ -4,6 +4,7 @@ import os
 import shlex
 
 from terminal_runtime.env import env_float as _env_float_impl
+from terminal_runtime.tmux import tmux_base
 
 _TMUX_TRANSIENT_SERVER_ERROR_MARKERS = (
     'fork failed',
@@ -122,9 +123,7 @@ def _tmux_command_text(
     if command:
         items = [str(item) for item in command]
     else:
-        items = ['tmux']
-        if socket_path:
-            items.extend(['-S', socket_path])
+        items = tmux_base(socket_path=socket_path)
         items.extend(str(item) for item in (args or ()))
     return shlex.join(items) if items else ''
 

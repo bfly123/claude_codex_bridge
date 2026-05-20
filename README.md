@@ -7,7 +7,7 @@
   <img src="https://img.shields.io/badge/Every_Model_Controllable-CF1322?style=for-the-badge" alt="Every Model Controllable">
 </p>
 
-[![Version](https://img.shields.io/badge/version-6.2.5-orange.svg)]()
+[![Version](https://img.shields.io/badge/version-6.2.6-orange.svg)]()
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey.svg)]()
 
 **English** | [Chinese](README_zh.md)
@@ -74,9 +74,9 @@ Build project-local teams with roles, pane layout, provider state, worktree isol
 <details>
 <summary><b>Latest release highlights</b></summary>
 
-- **Claude managed memory avoids duplicate project rules**: managed `.claude/CLAUDE.md` no longer copies project-level `CLAUDE.md`; Claude continues loading that file natively from the working directory.
-- **Managed Claude memory keeps the right inherited sources**: real `~/.claude/CLAUDE.md`, `.ccb/ccb_memory.md`, and per-agent `.ccb/agents/<agent>/memory.md` still project into the managed bundle.
-- **Memory source loading is now controllable**: `load_memory_sources(..., include_provider_native_project=False)` can skip provider-native project memory while existing callers keep the default include behavior.
+- **CCB tmux is isolated from user config by default**: managed tmux commands now use `tmux -f /dev/null ...`, preventing user `~/.tmux.conf` plugins and hooks from changing CCB pane layout.
+- **Source installs are more deterministic**: source/dev installs use a Python wrapper, honor `CCB_PYTHON_BIN`, run post-install entrypoint smoke checks, and bound Droid MCP registration with a timeout.
+- **Provider startup stays compatible and reliable**: restore-fresh takes effect, Claude trust state is written in the managed home, and Claude auto-permission continues to use `--permission-mode bypassPermissions`.
 
 See [Release Notes](#release-notes) for the full history.
 
@@ -338,6 +338,16 @@ Thanks to the [Linux.do community](https://linux.do) for testing, feedback, and 
 Historical note: older release notes below may mention `askd`, legacy flags, or removed commands. Those references are kept only as changelog history and do not redefine the current CLI surface.
 
 <details open>
+<summary><b>v6.2.6</b> - Tmux Isolation And Startup Hardening Release</summary>
+
+- Runs managed tmux commands with `tmux -f /dev/null ...` by default so user tmux config, plugins, hooks, and sidebars cannot reshape CCB-managed layouts.
+- Adds source/dev install hardening: Python wrapper entrypoint, `CCB_PYTHON_BIN`, post-install `ccb` and `ask` smoke checks, and bounded Droid MCP registration.
+- Keeps restore-fresh and Claude trust setup reliable while preserving Claude auto-permission as `--permission-mode bypassPermissions`.
+- Keeps removed wait-alias parser hints out of the current ask surface.
+
+</details>
+
+<details>
 <summary><b>v6.2.5</b> - Claude Managed Memory De-Duplication Hotfix</summary>
 
 - Stops copying project-level `CLAUDE.md` into managed `.claude/CLAUDE.md`, so Claude reads it once from the working directory.

@@ -137,7 +137,7 @@ Rules:
 - `ping('ccbd')` and `doctor` should surface start-policy summary fields when available
 - `ping('ccbd')` and `doctor` must surface namespace summary fields such as epoch, tmux socket path, session name, and latest lifecycle event when available
 - `ping('ccbd')` and `doctor` must surface current socket placement diagnostics, including preferred/effective socket path, root kind, fallback reason, and filesystem hint when known
-- `doctor` must also surface preferred/effective socket path byte lengths and an equivalent `tmux -S <effective-socket> start-server` command when a project tmux socket path is known, so macOS and WSL socket pathname failures can be diagnosed from one report
+- `doctor` must also surface preferred/effective socket path byte lengths and an equivalent isolated-config `tmux -f /dev/null -S <effective-socket> start-server` command when a project tmux socket path is known, so macOS and WSL socket pathname failures can be diagnosed from one report
 - malformed namespace diagnostics must surface as diagnostics errors, not silently disappear
 - supervision diagnostics must preserve mount-attempt distinctions:
   - `mount_started` details should include `mount_attempt_id` when present

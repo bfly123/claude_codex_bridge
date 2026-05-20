@@ -683,4 +683,4 @@ def test_doctor_summary_includes_socket_placement_fields(tmp_path: Path, monkeyp
     assert payload['ccbd']['tmux_effective_socket_path'] == '/home/demo/.local/state/ccb/projects/proj-1/ccbd/tmux.sock'
     assert payload['ccbd']['tmux_preferred_socket_path_bytes'] == len('/home/demo/.local/state/ccb/projects/proj-1/ccbd/tmux.sock'.encode())
     assert payload['ccbd']['tmux_effective_socket_path_bytes'] == len('/home/demo/.local/state/ccb/projects/proj-1/ccbd/tmux.sock'.encode())
-    assert payload['ccbd']['tmux_start_server_command'] == 'tmux -S /home/demo/.local/state/ccb/projects/proj-1/ccbd/tmux.sock start-server'
+    assert payload['ccbd']['tmux_start_server_command'] == 'tmux -f /dev/null -S /home/demo/.local/state/ccb/projects/proj-1/ccbd/tmux.sock start-server'

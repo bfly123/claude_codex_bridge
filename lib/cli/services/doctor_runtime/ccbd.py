@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import shlex
 
+from terminal_runtime.tmux import tmux_base
 from .stores import report_summary_fields, safe_report_load
 
 
@@ -73,7 +74,7 @@ def _tmux_start_server_command(socket_path: object) -> str | None:
     text = str(socket_path or '').strip()
     if not text:
         return None
-    return shlex.join(['tmux', '-S', text, 'start-server'])
+    return shlex.join([*tmux_base(socket_path=text), 'start-server'])
 
 
 def _remote_metric(remote: dict | None, key: str) -> float | None:

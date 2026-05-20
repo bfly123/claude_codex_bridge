@@ -87,7 +87,7 @@ def build_start_cmd(
     if settings_path is not None:
         cmd_parts.extend(['--settings', str(settings_path)])
     if command.auto_permission:
-        cmd_parts.append('--dangerously-skip-permissions')
+        cmd_parts.extend(['--permission-mode', 'bypassPermissions'])
     if restore_target.has_history:
         cmd_parts.append('--continue')
     cmd_parts.extend(spec.startup_args)

@@ -14,13 +14,29 @@ from terminal_runtime.tmux import socket_name_from_tmux_env
 from terminal_runtime.tmux import tmux_base
 
 
-def test_tmux_base_includes_socket_when_present() -> None:
-    assert tmux_base(None) == ["tmux"]
-    assert tmux_base("ccb-demo") == ["tmux", "-L", "ccb-demo"]
+def test_tmux_base_includes_socket_when_present(monkeypatch) -> None:
+    monkeypatch.delenv("CCB_TMUX_CONFIG", raising=False)
+
+    assert tmux_base(None) == ["tmux", "-f", "/dev/null"]
+    assert tmux_base("ccb-demo") == ["tmux", "-f", "/dev/null", "-L", "ccb-demo"]
     assert tmux_base("ccb-demo", socket_path="~/.tmux/demo.sock") == [
         "tmux",
+        "-f",
+        "/dev/null",
         "-S",
         str(Path("~/.tmux/demo.sock").expanduser()),
+    ]
+
+
+def test_tmux_base_allows_managed_config_override(monkeypatch) -> None:
+    monkeypatch.setenv("CCB_TMUX_CONFIG", "~/.config/ccb/tmux.conf")
+
+    assert tmux_base("ccb-demo") == [
+        "tmux",
+        "-f",
+        str(Path("~/.config/ccb/tmux.conf").expanduser()),
+        "-L",
+        "ccb-demo",
     ]
 
 
