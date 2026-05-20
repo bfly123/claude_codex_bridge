@@ -8,7 +8,7 @@ from agents.models import normalize_agent_name, parse_layout_spec
 from ..common import ConfigLoadResult, ConfigValidationError
 from ..defaults import build_default_project_config
 from ..parsing import validate_project_config
-from ..paths import project_config_path
+from ..paths import project_config_path, user_default_config_path
 
 _ALLOWED_HYBRID_TOP_LEVEL_KEYS = {'agents'}
 _HYBRID_HEADER_OWNED_AGENT_KEYS = {'provider', 'workspace_mode'}
@@ -239,6 +239,13 @@ def load_project_config(project_root: Path) -> ConfigLoadResult:
             config=validate_project_config(_load_config_document(project_path), source_path=project_path),
             source_path=project_path,
             used_default=False,
+        )
+    user_default_path = user_default_config_path()
+    if user_default_path.exists():
+        return ConfigLoadResult(
+            config=validate_project_config(_load_config_document(user_default_path), source_path=user_default_path),
+            source_path=user_default_path,
+            used_default=True,
         )
     return ConfigLoadResult(
         config=build_default_project_config(),

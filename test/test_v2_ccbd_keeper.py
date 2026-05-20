@@ -404,8 +404,9 @@ def test_project_keeper_stops_when_shutdown_intent_exists(tmp_path: Path) -> Non
     assert state.state == 'stopped'
 
 
-def test_project_keeper_uses_builtin_default_when_config_missing(tmp_path: Path) -> None:
+def test_project_keeper_uses_builtin_default_when_config_missing(tmp_path: Path, monkeypatch) -> None:
     project_root = tmp_path / 'repo-missing-config'
+    monkeypatch.setenv('HOME', str(tmp_path / 'empty-home'))
     _context(project_root, 'agent1:codex\n')
     config_path = project_root / '.ccb' / 'ccb.config'
     config_path.unlink()

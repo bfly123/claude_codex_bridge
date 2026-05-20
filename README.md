@@ -98,7 +98,7 @@ Tmux copy/paste: drag with the left mouse button to copy, and use `Ctrl+Shift+V`
 
 ## Config Control
 
-`ccb` is controlled by `.ccb/ccb.config`. This file is project-local and user-authored; if it is missing, CCB uses the built-in default without writing a new config file.
+`ccb` is controlled by `.ccb/ccb.config`. This file is project-local and user-authored; if it is missing, CCB uses `~/.ccb/ccb.config` when present, then falls back to the built-in default without writing a new project config file.
 
 `.ccb/ccb_memory.md` is the project-wide shared memory document.
 

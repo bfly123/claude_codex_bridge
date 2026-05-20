@@ -92,8 +92,12 @@ def test_load_project_config_rejects_case_insensitive_duplicates(tmp_path: Path)
         load_project_config(project_root)
 
 
-def test_load_project_config_uses_builtin_default_when_project_config_is_missing(tmp_path: Path) -> None:
+def test_load_project_config_uses_builtin_default_when_project_config_is_missing(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     project_root = tmp_path / 'repo'
+    monkeypatch.setenv('HOME', str(tmp_path / 'empty-home'))
     config = build_default_project_config()
     assert config.default_agents == ('agent1', 'agent2', 'agent3')
     assert config.cmd_enabled is True
@@ -195,25 +199,26 @@ def test_cmd_cannot_be_used_as_agent_name(tmp_path: Path) -> None:
         load_project_config(project_root)
 
 
-def test_load_project_config_requires_project_local_file_even_when_home_has_config(
+def test_load_project_config_uses_user_default_when_project_config_is_missing(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     home = tmp_path / 'home'
-    global_config = home / '.ccb' / 'ccb.config'
+    user_default_config = home / '.ccb' / 'ccb.config'
     project_root = tmp_path / 'repo'
     project_root.mkdir()
     monkeypatch.setenv('HOME', str(home))
-    _write(global_config, 'agent1:claude\n')
+    _write(user_default_config, 'cmd; builder:codex, reviewer:claude; qa:gemini\n')
 
     result = load_project_config(project_root)
 
-    assert result.source_path is None
+    assert result.source_path == user_default_config
     assert result.used_default is True
-    assert result.config.default_agents == ('agent1', 'agent2', 'agent3')
-    assert result.config.agents['agent1'].provider == 'codex'
-    assert result.config.agents['agent2'].provider == 'codex'
-    assert result.config.agents['agent3'].provider == 'claude'
+    assert result.config.default_agents == ('builder', 'reviewer', 'qa')
+    assert result.config.agents['builder'].provider == 'codex'
+    assert result.config.agents['reviewer'].provider == 'claude'
+    assert result.config.agents['qa'].provider == 'gemini'
+    assert result.config.cmd_enabled is True
 
 
 
