@@ -11,6 +11,7 @@ PROVIDER_SESSION_FILENAMES = {
     'gemini': '.gemini-session',
     'opencode': '.opencode-session',
     'droid': '.droid-session',
+    'agy': '.agy-session',
 }
 
 
