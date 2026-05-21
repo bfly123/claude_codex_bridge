@@ -60,6 +60,8 @@ class _FakeTmuxBackend:
     pane_options: dict[str, dict[str, str]] = field(default_factory=dict)
     session_options: dict[str, dict[str, str]] = field(default_factory=dict)
     window_options: dict[str, dict[str, str]] = field(default_factory=dict)
+    global_options: dict[str, str] = field(default_factory=dict)
+    global_window_options: dict[str, str] = field(default_factory=dict)
     hooks: dict[str, dict[str, str]] = field(default_factory=dict)
     tmux_calls: list[tuple[list[str], bool]] = field(default_factory=list)
     window_visibility_lag: dict[str, int] = field(default_factory=dict)
@@ -145,7 +147,11 @@ class _FakeTmuxBackend:
         self.tmux_calls.append((list(args), capture))
         if args[:1] == ['start-server']:
             return SimpleNamespace(returncode=0, stdout='', stderr='')
-        if args[:3] == ['set-option', '-g', 'destroy-unattached']:
+        if len(args) >= 4 and args[:2] == ['set-option', '-g']:
+            self.global_options[args[2]] = args[3]
+            return SimpleNamespace(returncode=0, stdout='', stderr='')
+        if len(args) >= 4 and args[:2] == ['set-window-option', '-g']:
+            self.global_window_options[args[2]] = args[3]
             return SimpleNamespace(returncode=0, stdout='', stderr='')
         if len(args) >= 3 and args[:2] == ['has-session', '-t']:
             return SimpleNamespace(returncode=0 if args[2] in self.sessions else 1, stdout='', stderr='')
@@ -656,4 +662,7 @@ def test_project_namespace_controller_uses_silent_server_commands(tmp_path: Path
     assert new_session_calls[0][-3:] == ['sh', '-lc', 'while :; do sleep 3600; done']
     assert (['start-server'], True) in backend.tmux_calls
     assert (['set-option', '-g', 'destroy-unattached', 'off'], True) in backend.tmux_calls
+    assert (['set-option', '-g', 'mouse', 'on'], True) in backend.tmux_calls
+    assert (['set-window-option', '-g', 'mode-keys', 'vi'], True) in backend.tmux_calls
+    assert (['set-option', '-g', 'history-limit', '50000'], True) in backend.tmux_calls
     assert (['kill-server'], True) in backend.tmux_calls

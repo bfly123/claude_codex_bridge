@@ -127,6 +127,18 @@ def test_prepare_server_then_create_session_and_server_policy_retry_transient_tm
     ) == 2
 
 
+def test_ensure_server_policy_applies_interactive_tmux_defaults(monkeypatch) -> None:
+    monkeypatch.setenv('CCB_TMUX_OBJECT_READY_POLL_INTERVAL_S', '0')
+    backend = _FlakyBackend()
+
+    ensure_server_policy(backend)
+
+    assert ('set-option', '-g', 'destroy-unattached', 'off') in backend.calls
+    assert ('set-option', '-g', 'mouse', 'on') in backend.calls
+    assert ('set-window-option', '-g', 'mode-keys', 'vi') in backend.calls
+    assert ('set-option', '-g', 'history-limit', '50000') in backend.calls
+
+
 def test_prepare_server_accepts_fast_probe_timeout(monkeypatch) -> None:
     monkeypatch.setenv('CCB_TMUX_OBJECT_READY_POLL_INTERVAL_S', '0')
     backend = _FlakyBackend()
@@ -147,7 +159,12 @@ def test_prepare_server_does_not_require_server_policy_before_session_exists(mon
 
     assert backend.calls[0] == ('start-server',)
     assert ('set-option', '-g', 'destroy-unattached', 'off') not in backend.calls[:2]
-    assert backend.calls[-1] == ('set-option', '-g', 'destroy-unattached', 'off')
+    assert backend.calls[-4:] == [
+        ('set-option', '-g', 'destroy-unattached', 'off'),
+        ('set-option', '-g', 'mouse', 'on'),
+        ('set-window-option', '-g', 'mode-keys', 'vi'),
+        ('set-option', '-g', 'history-limit', '50000'),
+    ]
 
 
 def test_list_windows_retries_transient_tmux_failures(monkeypatch) -> None:
@@ -304,7 +321,12 @@ def test_ensure_server_policy_accepts_fast_probe_timeout(monkeypatch) -> None:
 
     ensure_server_policy(backend, timeout_s=0.0)
 
-    assert backend.calls == [('set-option', '-g', 'destroy-unattached', 'off')]
+    assert backend.calls == [
+        ('set-option', '-g', 'destroy-unattached', 'off'),
+        ('set-option', '-g', 'mouse', 'on'),
+        ('set-window-option', '-g', 'mode-keys', 'vi'),
+        ('set-option', '-g', 'history-limit', '50000'),
+    ]
 
 
 def test_kill_window_accepts_fast_probe_timeout(monkeypatch) -> None:

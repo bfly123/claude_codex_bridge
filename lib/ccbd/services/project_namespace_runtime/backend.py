@@ -42,12 +42,31 @@ def prepare_server(backend, *, timeout_s: float | None = None) -> None:
 
 
 def ensure_server_policy(backend, *, timeout_s: float | None = None) -> None:
-    _tmux_run_ready(
-        backend,
-        ['set-option', '-g', 'destroy-unattached', 'off'],
-        failure_message='failed to persist tmux destroy-unattached policy',
-        timeout_s=timeout_s,
-    )
+    policies = [
+        (
+            ['set-option', '-g', 'destroy-unattached', 'off'],
+            'failed to persist tmux destroy-unattached policy',
+        ),
+        (
+            ['set-option', '-g', 'mouse', 'on'],
+            'failed to enable tmux mouse support',
+        ),
+        (
+            ['set-window-option', '-g', 'mode-keys', 'vi'],
+            'failed to enable vi copy-mode keys',
+        ),
+        (
+            ['set-option', '-g', 'history-limit', '50000'],
+            'failed to set tmux history limit',
+        ),
+    ]
+    for args, failure_message in policies:
+        _tmux_run_ready(
+            backend,
+            args,
+            failure_message=failure_message,
+            timeout_s=timeout_s,
+        )
 
 
 def create_session(
